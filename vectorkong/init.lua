@@ -108,7 +108,6 @@ function vectorkong.startplugin()
 	function vector(y1, x1, y2, x2)
 		-- draw a single vector
 		scr:draw_line(y1+wobble(), x1+wobble(), y2+wobble(), x2+wobble(), intensity())
-		--scr:draw_line((y1+wobble())*3, (x1+wobble())*3, (y2+wobble())*3, (x2+wobble())*3, intensity())
 		vector_count = vector_count + 1
 	end
 
