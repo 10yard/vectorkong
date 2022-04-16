@@ -18,6 +18,17 @@ local vectorkong = exports
 function vectorkong.startplugin()
 	local mame_version
 	local vector_count
+	local vector_chars = {}
+	vector_chars[0x00] = {0,2,0,4,2,6,4,6,6,4,6,2,4,0,2,0,0,2}
+	vector_chars[0x01] = {0,0,0,5,0,3,6,3,5,1}
+	vector_chars[0x02] = {0,6,0,0,5,6,6,3,5,0}
+	vector_chars[0x03] = {1,0,0,1,0,5,1,6,2,6,3,5,3,2,6,6,6,1}
+	vector_chars[0x04] = {0,5,6,5,6,3,3,0,2,0,2,6}
+	vector_chars[0x05] = {1,0,0,1,0,5,2,6,4,5,4,0,6,0,6,5}
+	vector_chars[0x06] = {3,0,1,0,0,1,0,5,1,6,2,6,3,5,3,0,6,2,6,5}
+	vector_chars[0x07] = {5,0,6,0,6,6,2,2,0,2}
+	vector_chars[0x08] = {2,0,1,0,0,1,0,5,1,6,4,0,5,0,6,1,6,4,5,5,4,5,2,0}
+	vector_chars[0x09] = {0,1,0,4,2,6,5,6,6,5,6,1,5,0,4,0,3,1,3,6}
 
 	function initialize()
 		mame_version = tonumber(emu.app_version())
@@ -42,6 +53,7 @@ function vectorkong.startplugin()
 
 			--cls()
 			draw_girders_stage()
+			draw_characters()
 			--debug_limits(4000)
 			--debug_vector_count()
 		end
@@ -104,12 +116,14 @@ function vectorkong.startplugin()
 		vector_count = vector_count + 1
 	end
 
-	function polyline(data)
+	function polyline(data, offset_y, offset_x)
 		-- draw multiple chained lines from a table of x, y points
 		local _y, _x
+		local _offy = offset_y or 0
+		local _offx = offset_x or 0
 		for _i=1, #data, 2 do
-			if _y and _x then vector(data[_i], data[_i+1], _y, _x) end
-			_y, _x =data[_i], data[_i+1]
+			if _y and _x then vector(data[_i]+_offy, data[_i+1]+_offx, _y, _x) end
+			_y, _x =data[_i]+_offy, data[_i+1]+_offx
 		end
 	end
 
@@ -185,6 +199,28 @@ function vectorkong.startplugin()
 		-- draw parallel vectors (offset by 7 pixels) to form a girder.  Co-ordinates relate to the bottom vector.
 		vector(y1,   x1,   y2, x2, intensity())
 		vector(y1+7, x1, y2+7, x2, intensity())
+	end
+
+	function draw_characters()
+		-- Read video ram to determine which vector characters to write
+		--  $7400-77ff Video RAM
+		--  top left corner:      $77A0
+		--  bottom left corner:   $77BF
+		--	top right corner:     $7440
+		--  bottom right corner:  $745F
+		local _byte
+		local _addr = 0x7440
+		for _x=223, 0, -8 do
+			for _y=255, 0, -8 do
+				_byte = mem:read_u8(_addr)
+				if _byte >= 0x00 and _byte <= 0x09 then
+					if not mac.paused then
+						polyline(vector_chars[_byte], _y - 6, _x - 6)
+					end
+				end
+				_addr = _addr + 1
+			end
+		end
 	end
 
 	-- Debugging functions
