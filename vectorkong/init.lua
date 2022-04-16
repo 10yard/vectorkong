@@ -22,13 +22,7 @@ function vectorkong.startplugin()
 	function initialize()
 		mame_version = tonumber(emu.app_version())
 		if mame_version >= 0.196 then
-			if type(manager.machine) == "userdata" then
-				mac = manager.machine
-				vid = mac.video
-			else
-				mac =  manager:machine()
-				vid = mac:video()
-			end
+			if type(manager.machine) == "userdata" then mac = manager.machine else mac =  manager:machine() end
 		else
 			print("ERROR: The vectorkong plugin requires MAME version 0.196 or greater.")
 		end
@@ -48,8 +42,7 @@ function vectorkong.startplugin()
 
 			--cls()
 			draw_girders_stage()
-
-			--debug_limits(1000)
+			--debug_limits(4000)
 			--debug_vector_count()
 		end
 	end
@@ -138,12 +131,11 @@ function vectorkong.startplugin()
 
 	function intensity()
 		-- we can vary the brightness of the vectors
-		return (0xdd000000 * math.random(3)) + 0x00ffffff
+		return ({0xbbffffff, 0xddffffff, 0xffffffff})[math.random(3)]
 	end
 
 	function wobble()
 		-- random change of the vector offset
-		-- return math.random(-40, 60) / 100  -- bigger wobble
 		return math.random(-40, 60) / 100 -- random change of the vector offset
 	end
 

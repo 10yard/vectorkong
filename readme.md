@@ -1,4 +1,4 @@
-# **VectorKong Plugin for MAME** #
+# **Vectorising Donkey Kong** #
 
 I'm working on a vectorised version of Donkey Kong for MAME.  I'll be hacking the original game,  suppressing the normal video output completely and rendering high resolution vectors to the screen instead of pixels.  The techniques i'll be  using could be applied to other classic arcade games.  I'm choosing Donkey Kong because I am very familiar with the disassembled code and mechanics of the game.
 
