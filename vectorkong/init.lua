@@ -49,7 +49,12 @@ function vectorkong.startplugin()
 	vector_chars[0x22] = {0,0,6,0,6,5,5,6,4,6,2,3,2,0,2,3,0,6}
 	vector_chars[0x23] = {1,0,0,1,0,5,1,6,2,6,4,0,5,0,6,1,6,4,5,5}
 	vector_chars[0x24] = {6,0,6,3,0,3,6,3,6,6}
-	vector_chars[0x25] = {} -- U
+	vector_chars[0x25] = {6,0,1,0,0,1,0,5,1,6,6,6}
+	vector_chars[0x26] = {6,0,3,0,0,3,3,6,6,6}
+	vector_chars[0x27] = {6,0,2,0,0,1,4,3,0,5,2,6,6,6}
+	vector_chars[0x28] = {0,0,6,6,3,3,6,0,0,6}
+	vector_chars[0x29] = {6,0,3,3,0,3,3,3,6,6}
+	vector_chars[0x2a] = {6,0,6,6,0,0,0,6}
 
 	function initialize()
 		mame_version = tonumber(emu.app_version())
@@ -75,8 +80,8 @@ function vectorkong.startplugin()
 			--cls()
 			draw_girders_stage()
 			draw_vector_characters()
-			--debug_limits(4000)
-			--debug_vector_count()
+			--debug_limits(1000)
+			debug_vector_count()
 		end
 	end
 
