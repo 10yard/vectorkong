@@ -18,43 +18,49 @@ local vectorkong = exports
 function vectorkong.startplugin()
 	local mame_version
 	local vector_count
+
 	local vector_chars = {}
-	vector_chars[0x00] = {0,2,0,4,2,6,4,6,6,4,6,2,4,0,2,0,0,2}
-	vector_chars[0x01] = {0,0,0,5,0,3,6,3,5,1}
-	vector_chars[0x02] = {0,6,0,0,5,6,6,3,5,0}
-	vector_chars[0x03] = {1,0,0,1,0,5,1,6,2,6,3,5,3,2,6,6,6,1}
-	vector_chars[0x04] = {0,5,6,5,6,3,3,0,2,0,2,6}
-	vector_chars[0x05] = {1,0,0,1,0,5,2,6,4,5,4,0,6,0,6,5}
-	vector_chars[0x06] = {3,0,1,0,0,1,0,5,1,6,2,6,3,5,3,0,6,2,6,5}
-	vector_chars[0x07] = {5,0,6,0,6,6,2,2,0,2}
-	vector_chars[0x08] = {2,0,1,0,0,1,0,5,1,6,4,0,5,0,6,1,6,4,5,5,4,5,2,0}
-	vector_chars[0x09] = {0,1,0,4,2,6,5,6,6,5,6,1,5,0,4,0,3,1,3,6}
-	vector_chars[0x11] = {0,0,4,0,6,3,4,6,0,6,2,6,2,0}
-	vector_chars[0x12] = {0,0,6,0,6,5,5,6,4,6,3,5,2,6,1,6,0,5,0,0}
-	vector_chars[0x13] = {1,6,0,5,0,2,2,0,4,0,6,2,6,5,5,6}
-	vector_chars[0x14] = {0,0,6,0,6,4,4,6,2,6,0,4,0,0}
-	vector_chars[0x15] = {0,5,0,0,3,0,3,4,3,0,6,0,6,5}
-	vector_chars[0x16] = {0,0,3,0,3,5,3,0,6,0,6,6}
-	vector_chars[0x17] = {3,4,3,6,0,6,0,2,2,0,4,0,6,2,6,6}
-	vector_chars[0x18] = {0,0,6,0,3,0,3,6,0,6,6,6}
-	vector_chars[0x19] = {0,0,0,6,0,3,6,3,6,0,6,6}
-	vector_chars[0x1a] = {1,0,0,1,0,5,1,6,6,6}
-	vector_chars[0x1b] = {0,0,6,0,3,0,0,6,3,0,6,6}
-	vector_chars[0x1c] = {6,0,0,0,0,5}
-	vector_chars[0x1d] = {0,0,6,0,2,3,6,6,0,6}
-	vector_chars[0x1e] = {0,0,6,0,0,6,6,6}
-	vector_chars[0x1f] = {1,0,5,0,6,1,6,5,5,6,1,6,0,5,0,1,1,0}
-	vector_chars[0x20] = {0,0,6,0,6,5,5,6,3,6,2,5,2,0}
-	vector_chars[0x21] = {1,0,5,0,6,1,6,5,5,6,2,6,1,5,2,3,0,6,1,5,0,4,0,1,1,0}
-	vector_chars[0x22] = {0,0,6,0,6,5,5,6,4,6,2,3,2,0,2,3,0,6}
-	vector_chars[0x23] = {1,0,0,1,0,5,1,6,2,6,4,0,5,0,6,1,6,4,5,5}
-	vector_chars[0x24] = {6,0,6,3,0,3,6,3,6,6}
-	vector_chars[0x25] = {6,0,1,0,0,1,0,5,1,6,6,6}
-	vector_chars[0x26] = {6,0,3,0,0,3,3,6,6,6}
-	vector_chars[0x27] = {6,0,2,0,0,1,4,3,0,5,2,6,6,6}
-	vector_chars[0x28] = {0,0,6,6,3,3,6,0,0,6}
-	vector_chars[0x29] = {6,0,3,3,0,3,3,3,6,6}
-	vector_chars[0x2a] = {6,0,6,6,0,0,0,6}
+	local B = 0xffff  -- break in a vector chain
+	vector_chars[0x00] = {0,2,0,4,2,6,4,6,6,4,6,2,4,0,2,0,0,2} -- 0
+	vector_chars[0x01] = {0,0,0,5,B,B,0,3,6,3,5,1} -- 1
+	vector_chars[0x02] = {0,6,0,0,5,6,6,3,5,0} -- 2
+	vector_chars[0x03] = {1,0,0,1,0,5,1,6,2,6,3,5,3,2,6,6,6,1} -- 3
+	vector_chars[0x04] = {0,5,6,5,6,3,3,0,2,0,2,6} -- 4
+	vector_chars[0x05] = {1,0,0,1,0,5,2,6,4,5,4,0,6,0,6,5} -- 5
+	vector_chars[0x06] = {3,0,1,0,0,1,0,5,1,6,2,6,3,5,3,0,6,2,6,5} -- 6
+	vector_chars[0x07] = {5,0,6,0,6,6,2,2,0,2} -- 7
+	vector_chars[0x08] = {2,0,1,0,0,1,0,5,1,6,4,0,5,0,6,1,6,4,5,5,4,5,2,0} -- B
+	vector_chars[0x09] = {0,1,0,4,2,6,5,6,6,5,6,1,5,0,4,0,3,1,3,6} -- 9
+	vector_chars[0x11] = {0,0,4,0,6,3,4,6,0,6,B,B,2,6,2,0}  -- A
+	vector_chars[0x12] = {0,0,6,0,6,5,5,6,4,6,3,5,2,6,1,6,0,5,0,0}  -- B
+	vector_chars[0x13] = {1,6,0,5,0,2,2,0,4,0,6,2,6,5,5,6} -- C
+	vector_chars[0x14] = {0,0,6,0,6,4,4,6,2,6,0,4,0,0} -- D
+	vector_chars[0x15] = {0,5,0,0,6,0,6,5,B,B,3,0,3,4} -- E
+	vector_chars[0x16] = {0,0,6,0,6,6,B,B,3,0,3,5} -- F
+	vector_chars[0x17] = {3,4,3,6,0,6,0,2,2,0,4,0,6,2,6,6} -- G
+	vector_chars[0x18] = {0,0,6,0,B,B,3,0,3,6,B,B,0,6,6,6} -- H
+	vector_chars[0x19] = {0,0,0,6,B,B,0,3,6,3,B,B,6,0,6,6} -- I
+	vector_chars[0x1a] = {1,0,0,1,0,5,1,6,6,6} -- J
+	vector_chars[0x1b] = {0,0,6,0,B,B,3,0,0,6,B,B,3,0,6,6} -- K
+	vector_chars[0x1c] = {6,0,0,0,0,5} -- L
+	vector_chars[0x1d] = {0,0,6,0,2,3,6,6,0,6}  --M
+	vector_chars[0x1e] = {0,0,6,0,0,6,6,6} --N
+	vector_chars[0x1f] = {1,0,5,0,6,1,6,5,5,6,1,6,0,5,0,1,1,0} --O
+	vector_chars[0x20] = {0,0,6,0,6,5,5,6,3,6,2,5,2,0} -- P
+	vector_chars[0x21] = {1,0,5,0,6,1,6,5,5,6,2,6,0,4,0,1,1,0,B,B,0,6,2,3} -- Q
+	vector_chars[0x22] = {0,0,6,0,6,5,5,6,4,6,2,3,2,0,2,3,0,6} -- R
+	vector_chars[0x23] = {1,0,0,1,0,5,1,6,2,6,4,0,5,0,6,1,6,4,5,5} -- S
+	vector_chars[0x24] = {6,0,6,6,B,B,6,3,0,3} -- T
+	vector_chars[0x25] = {6,0,1,0,0,1,0,5,1,6,6,6} -- U
+	vector_chars[0x26] = {6,0,3,0,0,3,3,6,6,6} -- V
+	vector_chars[0x27] = {6,0,2,0,0,1,4,3,0,5,2,6,6,6}  -- W
+	vector_chars[0x28] = {0,0,6,6,3,3,6,0,0,6} -- X
+	vector_chars[0x29] = {6,0,3,3,6,6,B,B,3,3,0,3} -- Y
+	vector_chars[0x2a] = {6,0,6,6,0,0,0,6} -- Z
+	vector_chars[0x2b] = {0,0,1,0,1,1,0,1,0,0}  -- dot
+	vector_chars[0x34] = {2,0,2,5,B,B,4,0,4,5} -- equals
+	vector_chars[0x35] = {3,0,3,5} -- dash
+	vector_chars[0x6c] = {0,0,0,31,B,B,2,0,2,4,3,5,4,4,5,5,6,4,6,0,2,0,B,B,3,7,2,8,2,11,3,12,5,12,6,11,6,8,5,7,3,7,B,B,2,14,6,14,2,19,6,19,B,B,6,21,3,21,2,22,2,25,3,26,6,26,B,B,2,28,2,31,4,31,4,28,5,28,6,29,6,31} -- bonus
 
 	function initialize()
 		mame_version = tonumber(emu.app_version())
@@ -148,8 +154,10 @@ function vectorkong.startplugin()
 		local _y, _x
 		if data then
 			for _i=1, #data, 2 do
-				if _y and _x then vector(data[_i]+_offy, data[_i+1]+_offx, _y, _x) end
-				_y, _x =data[_i]+_offy, data[_i+1]+_offx
+				if _y and _x and data[_i] ~= B and data[_i+1] ~= B and _y ~= B and _x ~= B then
+					vector(data[_i]+_offy, data[_i+1]+_offx, _y+_offy, _x+_offx)
+				end
+				_y, _x =data[_i], data[_i+1]
 			end
 		end
 	end
@@ -230,7 +238,6 @@ function vectorkong.startplugin()
 
 	function draw_vector_characters()
 		-- Output vector characters based on contents of video ram ($7400-77ff)
-		local _code
 		local _addr = 0x7440
 		for _x=223, 0, -8 do
 			for _y=255, 0, -8 do
