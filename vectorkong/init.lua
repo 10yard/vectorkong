@@ -29,6 +29,27 @@ function vectorkong.startplugin()
 	vector_chars[0x07] = {5,0,6,0,6,6,2,2,0,2}
 	vector_chars[0x08] = {2,0,1,0,0,1,0,5,1,6,4,0,5,0,6,1,6,4,5,5,4,5,2,0}
 	vector_chars[0x09] = {0,1,0,4,2,6,5,6,6,5,6,1,5,0,4,0,3,1,3,6}
+	vector_chars[0x11] = {0,0,4,0,6,3,4,6,0,6,2,6,2,0}
+	vector_chars[0x12] = {0,0,6,0,6,5,5,6,4,6,3,5,2,6,1,6,0,5,0,0}
+	vector_chars[0x13] = {1,6,0,5,0,2,2,0,4,0,6,2,6,5,5,6}
+	vector_chars[0x14] = {0,0,6,0,6,4,4,6,2,6,0,4,0,0}
+	vector_chars[0x15] = {0,5,0,0,3,0,3,4,3,0,6,0,6,5}
+	vector_chars[0x16] = {0,0,3,0,3,5,3,0,6,0,6,6}
+	vector_chars[0x17] = {3,4,3,6,0,6,0,2,2,0,4,0,6,2,6,6}
+	vector_chars[0x18] = {0,0,6,0,3,0,3,6,0,6,6,6}
+	vector_chars[0x19] = {0,0,0,6,0,3,6,3,6,0,6,6}
+	vector_chars[0x1a] = {1,0,0,1,0,5,1,6,6,6}
+	vector_chars[0x1b] = {0,0,6,0,3,0,0,6,3,0,6,6}
+	vector_chars[0x1c] = {6,0,0,0,0,5}
+	vector_chars[0x1d] = {0,0,6,0,2,3,6,6,0,6}
+	vector_chars[0x1e] = {0,0,6,0,0,6,6,6}
+	vector_chars[0x1f] = {1,0,5,0,6,1,6,5,5,6,1,6,0,5,0,1,1,0}
+	vector_chars[0x20] = {0,0,6,0,6,5,5,6,3,6,2,5,2,0}
+	vector_chars[0x21] = {1,0,5,0,6,1,6,5,5,6,2,6,1,5,2,3,0,6,1,5,0,4,0,1,1,0}
+	vector_chars[0x22] = {0,0,6,0,6,5,5,6,4,6,2,3,2,0,2,3,0,6}
+	vector_chars[0x23] = {1,0,0,1,0,5,1,6,2,6,4,0,5,0,6,1,6,4,5,5}
+	vector_chars[0x24] = {6,0,6,3,0,3,6,3,6,6}
+	vector_chars[0x25] = {} -- U
 
 	function initialize()
 		mame_version = tonumber(emu.app_version())
@@ -53,7 +74,7 @@ function vectorkong.startplugin()
 
 			--cls()
 			draw_girders_stage()
-			draw_characters()
+			draw_vector_characters()
 			--debug_limits(4000)
 			--debug_vector_count()
 		end
@@ -117,13 +138,14 @@ function vectorkong.startplugin()
 	end
 
 	function polyline(data, offset_y, offset_x)
-		-- draw multiple chained lines from a table of x, y points
+		-- draw multiple chained lines from a table of y,x points.  Optional offset for start y,x.
+		local _offy, _offx = offset_y or 0, offset_x or 0
 		local _y, _x
-		local _offy = offset_y or 0
-		local _offx = offset_x or 0
-		for _i=1, #data, 2 do
-			if _y and _x then vector(data[_i]+_offy, data[_i+1]+_offx, _y, _x) end
-			_y, _x =data[_i]+_offy, data[_i+1]+_offx
+		if data then
+			for _i=1, #data, 2 do
+				if _y and _x then vector(data[_i]+_offy, data[_i+1]+_offx, _y, _x) end
+				_y, _x =data[_i]+_offy, data[_i+1]+_offx
+			end
 		end
 	end
 
@@ -150,7 +172,7 @@ function vectorkong.startplugin()
 
 	function wobble()
 		-- random change of the vector offset
-		return math.random(-40, 60) / 100 -- random change of the vector offset
+		if not mac.paused then return math.random(-40, 60) / 100 else return 0 end -- random change of the vector offset
 	end
 
 	function cls()
@@ -201,23 +223,13 @@ function vectorkong.startplugin()
 		vector(y1+7, x1, y2+7, x2, intensity())
 	end
 
-	function draw_characters()
-		-- Read video ram to determine which vector characters to write
-		--  $7400-77ff Video RAM
-		--  top left corner:      $77A0
-		--  bottom left corner:   $77BF
-		--	top right corner:     $7440
-		--  bottom right corner:  $745F
-		local _byte
+	function draw_vector_characters()
+		-- Output vector characters based on contents of video ram ($7400-77ff)
+		local _code
 		local _addr = 0x7440
 		for _x=223, 0, -8 do
 			for _y=255, 0, -8 do
-				_byte = mem:read_u8(_addr)
-				if _byte >= 0x00 and _byte <= 0x09 then
-					if not mac.paused then
-						polyline(vector_chars[_byte], _y - 6, _x - 6)
-					end
-				end
+				polyline(vector_chars[mem:read_u8(_addr)], _y - 6, _x - 6)
 				_addr = _addr + 1
 			end
 		end
