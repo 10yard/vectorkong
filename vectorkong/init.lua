@@ -60,7 +60,8 @@ function vectorkong.startplugin()
 	vector_chars[0x2b] = {0,0,1,0,1,1,0,1,0,0}  -- dot
 	vector_chars[0x34] = {2,0,2,5,B,B,4,0,4,5} -- equals
 	vector_chars[0x35] = {3,0,3,5} -- dash
-	vector_chars[0x6c] = {0,0,0,31,B,B,2,0,2,4,3,5,4,4,5,5,6,4,6,0,2,0,B,B,3,7,2,8,2,11,3,12,5,12,6,11,6,8,5,7,3,7,B,B,2,14,6,14,2,19,6,19,B,B,6,21,3,21,2,22,2,25,3,26,6,26,B,B,2,28,2,31,4,31,4,28,5,28,6,29,6,31} -- bonus
+	vector_chars[0x6c] = {0,0,0,31,B,B,2,0,2,4,3,5,4,4,5,5,6,4,6,0,2,0,B,B,3,7,2,8,2,11,3,12,5,12,6,11,6,8,5,7,3,7,B,B,
+		2,14,6,14,2,19,6,19,B,B,6,21,3,21,2,22,2,25,3,26,6,26,B,B,2,28,2,31,4,31,4,28,5,28,6,29,6,31} -- bonus
 
 	function initialize()
 		mame_version = tonumber(emu.app_version())
@@ -83,8 +84,11 @@ function vectorkong.startplugin()
 			mode2 = mem:read_u8(0x600a)  -- 7-climb scene, 10-how high, 15-dead, 16-game over
 			stage = mem:read_u8(0x6227)  -- 1-girders, 2-pies, 3-springs, 4-rivets
 
-			--cls()
-			draw_girders_stage()
+			--print(tostring(mode1).."  "..tostring(mode2))
+			cls()
+			if stage ==1 and (mode2 >= 2 and mode2 <= 4) or (mode2 >= 11 and mode2 <= 22) then
+				draw_girders_stage()
+			end
 			draw_vector_characters()
 			--debug_limits(1000)
 			debug_vector_count()
@@ -101,7 +105,7 @@ function vectorkong.startplugin()
 		draw_oilcan(  8, 16)
 
 		-- 2nd Girder
-		draw_girder( 29, 207,  41,   0)
+		draw_girder( 41,   0,  29, 207)
 		draw_ladder( 46,  32,  17)  -- left ladder
 		draw_ladder( 42,  96,  25)  -- right ladder
 		draw_hammer( 56, 168)
@@ -114,7 +118,7 @@ function vectorkong.startplugin()
 		draw_ladder( 79, 184,  17)  -- right ladder
 
 		-- 4th Girder
-		draw_girder( 95, 207, 107,   0)
+		draw_girder(107,   0,  95, 207)
 		draw_ladder(112,  32,  17)  -- left ladder
 		draw_ladder(110,  72,  21)  -- middle ladder
 		draw_ladder(104, 168,   9)  -- broken ladder bottom
@@ -196,44 +200,42 @@ function vectorkong.startplugin()
 	-- vector objects
 	-----------------
 	function draw_oilcan(y, x)
-		box(y,     x,  1,  16)  -- outline of oil can
-		box(y+1, x+1, 14,  14)  -- bottom lip
 		box(y+15,  x,  1,  16)  -- top lip
-		box(y+7,   x+4,  3,   3)  -- "O"
-		vector(y+7, x+9, y+10, x+9)  -- "I"
-		polyline({y+7,x+13,y+7,x+11,y+10,x+11})  -- "L"
-		vector(y+5, x+1, y+5, x+15)  -- horizontal stripe
-		vector(y+12, x+1, y+12, x+15)  -- horizontal stripe
+		box(y,     x,  1,  16)  -- bottom lip
+		polyline({0,0,14,0,B,B,0,14,14,14,B,B,4,0,4,14,B,B,11,0,11,14}, y+1, x+1)  -- body of oil can
+		polyline({7,4,10,4,10,7,7,7,7,4,B,B,7,9,10,9,B,B,7,13,7,11,10,11}, y, x)  -- "OIL"
 	end
 
 	function draw_hammer(y, x)
-		polyline({y+5,x,y+7,x,y+8,x+1,y+8,x+8,y+7,x+9,y+5,x+9,y+4,x+8,y+4,x+1,y+5,x})  -- hammer
+		polyline({5,0,7,0,8,1,8,8,7,9,5,9,4,8,4,1,5,0}, y, x)  -- hammer
 		box(y,   x+4, 4, 1)  -- bottom handle
 		box(y+8, x+4, 1, 1)  -- top handle
 	end
 
 	function draw_barrel(y, x)
 		-- draw an upright/stacked barrel
-		polyline({y+3,x,y+12,x,y+15,x+2,y+15,x+7,y+12,x+9,y+3,x+9,y,x+7,y,x+7,y,x+2,y+3,x})  -- barrel outline
-		vector(y+1,  x+1, y+1,  x+8)  -- horizontal bands
-		vector(y+14, x+1, y+14, x+8)
-		vector(y+2,  x+3, y+13, x+3)  -- vertical bands
-		vector(y+2,  x+6, y+13, x+6)
+		polyline({3,0,12,0,15,2,15,7,12,9,3,9,0,7,0,7,0,2,3,0},y,x)  -- barrel outline
+		polyline({1,1,1,8,B,B,14,1,14,8,B,B,2,3,13,3,B,B,2,6,13,6}, y, x) -- horizontal and vertical bands
 	end
 
 	function draw_ladder(y, x, h)
 		-- draw a single ladder at given y, x position of given height in pixels
-		vector(y, x,   y+h, x)  -- left leg
-		vector(y, x+8, y+h, x+8)  -- right leg
+		polyline({0,0,h,0,B,B,0,8,h,8},y,x)  -- left and right legs
 		for i=0, h-2 do  -- draw rung every 4th pixel (skipping 2 pixels at bottom)
 			if i % 4 == 0 then vector(y+i+2, x, y+i+2, x+8) end
 		end
 	end
 
 	function draw_girder(y1, x1, y2, x2)
-		-- draw parallel vectors (offset by 7 pixels) to form a girder.  Co-ordinates relate to the bottom vector.
-		vector(y1,   x1,   y2, x2, intensity())
-		vector(y1+7, x1, y2+7, x2, intensity())
+		-- draw parallel vectors (offset by 7 pixels) to form a girder.
+		polyline({y1,x1,y2,x2,B,B,y1+7,x1,y2+7,x2})
+		-- Fill the girders with zig zags
+		local _zig = 8  -- zigzag width
+		for _x=x1, x2 - 1, _zig*2 do
+			_y = y1 + (((y2 - y1) / (x2 - x1)) * (_x - x1))
+			vector(_y+1,_x,_y+6,_x+_zig)
+			vector(_y+6,_x+_zig,_y+1,_x+_zig*2)
+		end
 	end
 
 	function draw_vector_characters()
