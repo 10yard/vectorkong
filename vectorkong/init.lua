@@ -62,8 +62,16 @@ function vectorkong.startplugin()
 	vector_lib[0x29] = {6,0,3,3,6,6,B,B,3,3,0,3} -- Y
 	vector_lib[0x2a] = {6,0,6,6,0,0,0,6} -- Z
 	vector_lib[0x2b] = {0,0,1,0,1,1,0,1,0,0}  -- dot
+	vector_lib[0x2c] = {3,0,3,5} -- dash
+	vector_lib[0x2d] = {5,0,5,6} -- underscore
+	vector_lib[0x2e] = {4,3,4,3,B,B,2,3,2,3} -- colon
+	vector_lib[0x2f] = {5,0,5,6} -- Alt underscore
 	vector_lib[0x34] = {2,0,2,5,B,B,4,0,4,5} -- equals
 	vector_lib[0x35] = {3,0,3,5} -- dash
+	vector_lib[0x44] = {0,5,4,5,4,7,2,7,0,8,B,B,2,5,2,7,B,B,4,10,1,10,0,11,0,12,1,13,4,13,B,B,
+		0,15,4,15,4,17,2,17,2,18,0,18,0,15,B,B,2,15,2,17,B,B,0,23,0,21,4,21,4,23,B,B,2,21,2,22,B,B,
+		0,25,4,25,0,28,4,28,B,B,0,30,4,30,4,32,3,33,1,33,0,32,0,30} -- rub / end
+	vector_lib[0x49] = {0,4,2,2,5,2,7,4,7,8,5,10,2,10,0,8,0,4,B,B,2,7,2,5,5,5,5,7} -- copyright
 	vector_lib[0x6c] = {2,0,2,4,3,5,4,4,5,5,6,4,6,0,2,0,B,B,4,4,4,0,B,B,3,7,2,8,2,11,3,12,5,12,6,11,6,8,5,7,3,7,B,B,
 		2,14,6,14,2,19,6,19,B,B,6,21,3,21,2,22,2,25,3,26,6,26,B,B,2,28,2,31,4,31,4,28,5,28,6,29,6,31, B,B,
 		6,-2,6,-5,-12,-5,-12,36,6,36,6,33,B,B,0,-3,-10,-3,-10,34,0,34,0,-3} -- bonus
@@ -89,6 +97,7 @@ function vectorkong.startplugin()
 	vector_lib[0x89] = {0,1,0,4,2,6,5,6,6,5,6,1,5,0,4,0,3,1,3,6} -- Alt 9
 	vector_lib[0x8a] = {0,0,6,0,2,3,6,6,0,6}  -- Alt M
 	vector_lib[0x8b] = {0,0,6,0,2,3,6,6,0,6}  -- Alt M
+	vector_lib[0x9f] = {2,0,0,2,0,13,2,15,5,15,7,13,7,2,5,0,2,0,B,B,5,3,5,7,B,B,5,5,2,5,B,B,2,8,5,8,4,10,5,12,2,12}  -- TM
 	vector_lib[0xb0] = {0,0,7,0,7,7,0,7,0,0,B,B,1,1,1,6} -- Block
 	vector_lib[0xdd] = {7,0,5,0,B,B,6,0,6,4,B,B,7,4,4,4,B,B,7,9,7,6,4,6,3,9,B,B,5,6,5,9,B,B,7,11,3,11,2,14,B,B,
 		1,16,7,16,7,19,3,19,3,16,B,B,7,22,2,21,B,B,0,20,0,21} -- Help (little H)
@@ -118,9 +127,9 @@ function vectorkong.startplugin()
 			mode2 = mem:read_u8(0x600a)  -- 7-climb scene, 10-how high, 15-dead, 16-game over
 			stage = mem:read_u8(0x6227)  -- 1-girders, 2-pies, 3-springs, 4-rivets
 
-			--print(tostring(mode1).."  "..tostring(mode2))
+			print(tostring(mode1).."  "..tostring(mode2))
 			--cls()
-			if stage ==1 and (mode2 >= 2 and mode2 <= 4) or (mode2 >= 11 and mode2 <= 22) then
+			if stage ==1 and (mode2 >= 2 and mode2 <= 4) or (mode2 >= 11 and mode2 <= 20) then
 				draw_girders_stage()
 			end
 			draw_vector_characters()
