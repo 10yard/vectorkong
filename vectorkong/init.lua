@@ -18,50 +18,62 @@ local vectorkong = exports
 function vectorkong.startplugin()
 	local mame_version
 	local vector_count
-
-	local vector_chars = {}
+	
+	-- Options
+	local enable_zigzags = false
+	
+	-- Vector character library
+	local vector_lib = {}
 	local B = 0xffff  -- break in a vector chain
-	vector_chars[0x00] = {0,2,0,4,2,6,4,6,6,4,6,2,4,0,2,0,0,2} -- 0
-	vector_chars[0x01] = {0,0,0,5,B,B,0,3,6,3,5,1} -- 1
-	vector_chars[0x02] = {0,6,0,0,5,6,6,3,5,0} -- 2
-	vector_chars[0x03] = {1,0,0,1,0,5,1,6,2,6,3,5,3,2,6,6,6,1} -- 3
-	vector_chars[0x04] = {0,5,6,5,6,3,3,0,2,0,2,6} -- 4
-	vector_chars[0x05] = {1,0,0,1,0,5,2,6,4,5,4,0,6,0,6,5} -- 5
-	vector_chars[0x06] = {3,0,1,0,0,1,0,5,1,6,2,6,3,5,3,0,6,2,6,5} -- 6
-	vector_chars[0x07] = {5,0,6,0,6,6,2,2,0,2} -- 7
-	vector_chars[0x08] = {2,0,1,0,0,1,0,5,1,6,4,0,5,0,6,1,6,4,5,5,4,5,2,0} -- B
-	vector_chars[0x09] = {0,1,0,4,2,6,5,6,6,5,6,1,5,0,4,0,3,1,3,6} -- 9
-	vector_chars[0x11] = {0,0,4,0,6,3,4,6,0,6,B,B,2,6,2,0}  -- A
-	vector_chars[0x12] = {0,0,6,0,6,5,5,6,4,6,3,5,2,6,1,6,0,5,0,0}  -- B
-	vector_chars[0x13] = {1,6,0,5,0,2,2,0,4,0,6,2,6,5,5,6} -- C
-	vector_chars[0x14] = {0,0,6,0,6,4,4,6,2,6,0,4,0,0} -- D
-	vector_chars[0x15] = {0,5,0,0,6,0,6,5,B,B,3,0,3,4} -- E
-	vector_chars[0x16] = {0,0,6,0,6,6,B,B,3,0,3,5} -- F
-	vector_chars[0x17] = {3,4,3,6,0,6,0,2,2,0,4,0,6,2,6,6} -- G
-	vector_chars[0x18] = {0,0,6,0,B,B,3,0,3,6,B,B,0,6,6,6} -- H
-	vector_chars[0x19] = {0,0,0,6,B,B,0,3,6,3,B,B,6,0,6,6} -- I
-	vector_chars[0x1a] = {1,0,0,1,0,5,1,6,6,6} -- J
-	vector_chars[0x1b] = {0,0,6,0,B,B,3,0,0,6,B,B,3,0,6,6} -- K
-	vector_chars[0x1c] = {6,0,0,0,0,5} -- L
-	vector_chars[0x1d] = {0,0,6,0,2,3,6,6,0,6}  --M
-	vector_chars[0x1e] = {0,0,6,0,0,6,6,6} --N
-	vector_chars[0x1f] = {1,0,5,0,6,1,6,5,5,6,1,6,0,5,0,1,1,0} --O
-	vector_chars[0x20] = {0,0,6,0,6,5,5,6,3,6,2,5,2,0} -- P
-	vector_chars[0x21] = {1,0,5,0,6,1,6,5,5,6,2,6,0,4,0,1,1,0,B,B,0,6,2,3} -- Q
-	vector_chars[0x22] = {0,0,6,0,6,5,5,6,4,6,2,3,2,0,2,3,0,6} -- R
-	vector_chars[0x23] = {1,0,0,1,0,5,1,6,2,6,4,0,5,0,6,1,6,4,5,5} -- S
-	vector_chars[0x24] = {6,0,6,6,B,B,6,3,0,3} -- T
-	vector_chars[0x25] = {6,0,1,0,0,1,0,5,1,6,6,6} -- U
-	vector_chars[0x26] = {6,0,3,0,0,3,3,6,6,6} -- V
-	vector_chars[0x27] = {6,0,2,0,0,1,4,3,0,5,2,6,6,6}  -- W
-	vector_chars[0x28] = {0,0,6,6,3,3,6,0,0,6} -- X
-	vector_chars[0x29] = {6,0,3,3,6,6,B,B,3,3,0,3} -- Y
-	vector_chars[0x2a] = {6,0,6,6,0,0,0,6} -- Z
-	vector_chars[0x2b] = {0,0,1,0,1,1,0,1,0,0}  -- dot
-	vector_chars[0x34] = {2,0,2,5,B,B,4,0,4,5} -- equals
-	vector_chars[0x35] = {3,0,3,5} -- dash
-	vector_chars[0x6c] = {0,0,0,31,B,B,2,0,2,4,3,5,4,4,5,5,6,4,6,0,2,0,B,B,3,7,2,8,2,11,3,12,5,12,6,11,6,8,5,7,3,7,B,B,
-		2,14,6,14,2,19,6,19,B,B,6,21,3,21,2,22,2,25,3,26,6,26,B,B,2,28,2,31,4,31,4,28,5,28,6,29,6,31} -- bonus
+	vector_lib[0x00] = { 0, 2, 0, 4, 2, 6, 4, 6, 6, 4, 6, 2, 4, 0, 2, 0, 0, 2} -- 0
+	vector_lib[0x01] = { 0, 0, 0, 5, B, B, 0, 3, 6, 3, 5, 1} -- 1
+	vector_lib[0x02] = { 0, 6, 0, 0, 5, 6, 6, 3, 5, 0} -- 2
+	vector_lib[0x03] = {1,0,0,1,0,5,1,6,2,6,3,5,3,2,6,6,6,1} -- 3
+	vector_lib[0x04] = {0,5,6,5,6,3,3,0,2,0,2,6} -- 4
+	vector_lib[0x05] = {1,0,0,1,0,5,2,6,4,5,4,0,6,0,6,5} -- 5
+	vector_lib[0x06] = {3,0,1,0,0,1,0,5,1,6,2,6,3,5,3,0,6,2,6,5} -- 6
+	vector_lib[0x07] = {5,0,6,0,6,6,2,2,0,2} -- 7
+	vector_lib[0x08] = {2,0,1,0,0,1,0,5,1,6,4,0,5,0,6,1,6,4,5,5,4,5,2,0} -- B
+	vector_lib[0x09] = {0,1,0,4,2,6,5,6,6,5,6,1,5,0,4,0,3,1,3,6} -- 9
+	vector_lib[0x11] = {0,0,4,0,6,3,4,6,0,6,B,B,2,6,2,0}  -- A
+	vector_lib[0x12] = {0,0,6,0,6,5,5,6,4,6,3,5,2,6,1,6,0,5,0,0}  -- B
+	vector_lib[0x13] = {1,6,0,5,0,2,2,0,4,0,6,2,6,5,5,6} -- C
+	vector_lib[0x14] = {0,0,6,0,6,4,4,6,2,6,0,4,0,0} -- D
+	vector_lib[0x15] = {0,5,0,0,6,0,6,5,B,B,3,0,3,4} -- E
+	vector_lib[0x16] = {0,0,6,0,6,6,B,B,3,0,3,5} -- F
+	vector_lib[0x17] = {3,4,3,6,0,6,0,2,2,0,4,0,6,2,6,6} -- G
+	vector_lib[0x18] = {0,0,6,0,B,B,3,0,3,6,B,B,0,6,6,6} -- H
+	vector_lib[0x19] = {0,0,0,6,B,B,0,3,6,3,B,B,6,0,6,6} -- I
+	vector_lib[0x1a] = {1,0,0,1,0,5,1,6,6,6} -- J
+	vector_lib[0x1b] = {0,0,6,0,B,B,3,0,0,6,B,B,3,0,6,6} -- K
+	vector_lib[0x1c] = {6,0,0,0,0,5} -- L
+	vector_lib[0x1d] = {0,0,6,0,2,3,6,6,0,6}  --M
+	vector_lib[0x1e] = {0,0,6,0,0,6,6,6} --N
+	vector_lib[0x1f] = {1,0,5,0,6,1,6,5,5,6,1,6,0,5,0,1,1,0} --O
+	vector_lib[0x20] = {0,0,6,0,6,5,5,6,3,6,2,5,2,0} -- P
+	vector_lib[0x21] = {1,0,5,0,6,1,6,5,5,6,2,6,0,4,0,1,1,0,B,B,0,6,2,3} -- Q
+	vector_lib[0x22] = {0,0,6,0,6,5,5,6,4,6,2,3,2,0,2,3,0,6} -- R
+	vector_lib[0x23] = {1,0,0,1,0,5,1,6,2,6,4,0,5,0,6,1,6,4,5,5} -- S
+	vector_lib[0x24] = {6,0,6,6,B,B,6,3,0,3} -- T
+	vector_lib[0x25] = {6,0,1,0,0,1,0,5,1,6,6,6} -- U
+	vector_lib[0x26] = {6,0,3,0,0,3,3,6,6,6} -- V
+	vector_lib[0x27] = {6,0,2,0,0,1,4,3,0,5,2,6,6,6}  -- W
+	vector_lib[0x28] = {0,0,6,6,3,3,6,0,0,6} -- X
+	vector_lib[0x29] = {6,0,3,3,6,6,B,B,3,3,0,3} -- Y
+	vector_lib[0x2a] = {6,0,6,6,0,0,0,6} -- Z
+	vector_lib[0x2b] = {0,0,1,0,1,1,0,1,0,0}  -- dot
+	vector_lib[0x34] = {2,0,2,5,B,B,4,0,4,5} -- equals
+	vector_lib[0x35] = {3,0,3,5} -- dash
+	vector_lib[0x6c] = {2,0,2,4,3,5,4,4,5,5,6,4,6,0,2,0,B,B,4,4,4,0,B,B,3,7,2,8,2,11,3,12,5,12,6,11,6,8,5,7,3,7,B,B,
+		2,14,6,14,2,19,6,19,B,B,6,21,3,21,2,22,2,25,3,26,6,26,B,B,2,28,2,31,4,31,4,28,5,28,6,29,6,31, B,B,
+		6,-2,6,-5,-12,-5,-12,36,6,36,6,33,B,B,0,-3,-10,-3,-10,34,0,34,0,-3} -- bonus
+	vector_lib[0xdd] = {7,0,5,0,B,B,6,0,6,4,B,B,7,4,4,4,B,B,7,9,7,6,4,6,3,9,B,B,5,6,5,9,B,B,7,11,3,11,2,14,B,B,
+		1,16,7,16,7,19,3,19,3,16,B,B,7,22,2,21,B,B,0,20,0,21} -- Help (little H)
+	vector_lib[0xed] = {7,0,5,0,B,B,6,0,6,4,B,B,7,4,4,4,B,B,7,9,7,6,4,6,3,9,B,B,5,6,5,9,B,B,7,11,3,11,2,14,B,B,
+		1,16,7,16,7,19,3,19,3,16,B,B,7,22,2,21,B,B,0,20,0,21} -- Help
+	vector_lib[0xfb] = {5,1,6,2,6,5,5,6,4,6,2,3,B,B,0,3,0,3} -- question mark
+	vector_lib[0xff] = {5,2,7,2,7,4,5,4,5,2,B,B,5,3,2,3,0,1,B,B,2,3,0,5,B,B,4,0,3,1,3,5,4,6} -- jumpman lives
+
 
 	function initialize()
 		mame_version = tonumber(emu.app_version())
@@ -85,7 +97,7 @@ function vectorkong.startplugin()
 			stage = mem:read_u8(0x6227)  -- 1-girders, 2-pies, 3-springs, 4-rivets
 
 			--print(tostring(mode1).."  "..tostring(mode2))
-			cls()
+			--cls()
 			if stage ==1 and (mode2 >= 2 and mode2 <= 4) or (mode2 >= 11 and mode2 <= 22) then
 				draw_girders_stage()
 			end
@@ -229,12 +241,14 @@ function vectorkong.startplugin()
 	function draw_girder(y1, x1, y2, x2)
 		-- draw parallel vectors (offset by 7 pixels) to form a girder.
 		polyline({y1,x1,y2,x2,B,B,y1+7,x1,y2+7,x2})
-		-- Fill the girders with zig zags
-		local _zig = 8  -- zigzag width
-		for _x=x1, x2 - 1, _zig*2 do
-			_y = y1 + (((y2 - y1) / (x2 - x1)) * (_x - x1))
-			vector(_y+1,_x,_y+6,_x+_zig)
-			vector(_y+6,_x+_zig,_y+1,_x+_zig*2)
+		-- Fill the girders with optional zig zags
+		if enable_zigzags then
+			local _zig = 8  -- zigzag width 4 or 8 works well
+			for _x=x1, x2 - 1, _zig*2 do
+				_y = y1 + (((y2 - y1) / (x2 - x1)) * (_x - x1))
+				vector(_y+1,_x,_y+6,_x+_zig)
+				vector(_y+6,_x+_zig,_y+1,_x+_zig*2)
+			end
 		end
 	end
 
@@ -243,7 +257,7 @@ function vectorkong.startplugin()
 		local _addr = 0x7440
 		for _x=223, 0, -8 do
 			for _y=255, 0, -8 do
-				polyline(vector_chars[mem:read_u8(_addr)], _y - 6, _x - 6)
+				polyline(vector_lib[mem:read_u8(_addr)], _y - 6, _x - 6)
 				_addr = _addr + 1
 			end
 		end
