@@ -25,16 +25,16 @@ function vectorkong.startplugin()
 	-- Vector character library
 	local vector_lib = {}
 	local B = 0xffff  -- break in a vector chain
-	vector_lib[0x00] = { 0, 2, 0, 4, 2, 6, 4, 6, 6, 4, 6, 2, 4, 0, 2, 0, 0, 2} -- 0
-	vector_lib[0x01] = { 0, 0, 0, 5, B, B, 0, 3, 6, 3, 5, 1} -- 1
-	vector_lib[0x02] = { 0, 6, 0, 0, 5, 6, 6, 3, 5, 0} -- 2
+	vector_lib[0x00] = {0,2,0,4,2,6,4,6,6,4,6,2,4,0,2,0,0,2} -- 0
+	vector_lib[0x01] = {0,0,0,6,B,B,0,3,6,3,5, 1} -- 1
+	vector_lib[0x02] = {0,6,0,0,5,6,6,3,5,0} -- 2
 	vector_lib[0x03] = {1,0,0,1,0,5,1,6,2,6,3,5,3,2,6,6,6,1} -- 3
-	vector_lib[0x04] = {0,5,6,5,6,3,3,0,2,0,2,6} -- 4
+	vector_lib[0x04] = {0,5,6,5,2,0,2,7} -- 4
 	vector_lib[0x05] = {1,0,0,1,0,5,2,6,4,5,4,0,6,0,6,5} -- 5
 	vector_lib[0x06] = {3,0,1,0,0,1,0,5,1,6,2,6,3,5,3,0,6,2,6,5} -- 6
-	vector_lib[0x07] = {5,0,6,0,6,6,2,2,0,2} -- 7
-	vector_lib[0x08] = {2,0,1,0,0,1,0,5,1,6,4,0,5,0,6,1,6,4,5,5,4,5,2,0} -- B
-	vector_lib[0x09] = {0,1,0,4,2,6,5,6,6,5,6,1,5,0,4,0,3,1,3,6} -- 9
+	vector_lib[0x07] = {6,0,6,6,0,2} -- 7
+	vector_lib[0x08] = {2,0,0,1,0,5,2,6,5,0,6,1,6,4,5,5,2,0} -- 8
+	vector_lib[0x09] = {0,1,0,4,2,6,5,6,6,5,6,2,5,0,4,0,3,1,3,6} -- 9
 	vector_lib[0x11] = {0,0,4,0,6,3,4,6,0,6,B,B,2,6,2,0}  -- A
 	vector_lib[0x12] = {0,0,6,0,6,5,5,6,4,6,3,5,2,6,1,6,0,5,0,0}  -- B
 	vector_lib[0x13] = {1,6,0,5,0,2,2,0,4,0,6,2,6,5,5,6} -- C
@@ -47,9 +47,9 @@ function vectorkong.startplugin()
 	vector_lib[0x1a] = {1,0,0,1,0,5,1,6,6,6} -- J
 	vector_lib[0x1b] = {0,0,6,0,B,B,3,0,0,6,B,B,3,0,6,6} -- K
 	vector_lib[0x1c] = {6,0,0,0,0,5} -- L
-	vector_lib[0x1d] = {0,0,6,0,2,3,6,6,0,6}  --M
-	vector_lib[0x1e] = {0,0,6,0,0,6,6,6} --N
-	vector_lib[0x1f] = {1,0,5,0,6,1,6,5,5,6,1,6,0,5,0,1,1,0} --O
+	vector_lib[0x1d] = {0,0,6,0,2,3,6,6,0,6}  -- M
+	vector_lib[0x1e] = {0,0,6,0,0,6,6,6} -- N
+	vector_lib[0x1f] = {1,0,5,0,6,1,6,5,5,6,1,6,0,5,0,1,1,0} -- O
 	vector_lib[0x20] = {0,0,6,0,6,5,5,6,3,6,2,5,2,0} -- P
 	vector_lib[0x21] = {1,0,5,0,6,1,6,5,5,6,2,6,0,4,0,1,1,0,B,B,0,6,2,3} -- Q
 	vector_lib[0x22] = {0,0,6,0,6,5,5,6,4,6,2,3,2,0,2,3,0,6} -- R
@@ -67,13 +67,35 @@ function vectorkong.startplugin()
 	vector_lib[0x6c] = {2,0,2,4,3,5,4,4,5,5,6,4,6,0,2,0,B,B,4,4,4,0,B,B,3,7,2,8,2,11,3,12,5,12,6,11,6,8,5,7,3,7,B,B,
 		2,14,6,14,2,19,6,19,B,B,6,21,3,21,2,22,2,25,3,26,6,26,B,B,2,28,2,31,4,31,4,28,5,28,6,29,6,31, B,B,
 		6,-2,6,-5,-12,-5,-12,36,6,36,6,33,B,B,0,-3,-10,-3,-10,34,0,34,0,-3} -- bonus
+	vector_lib[0x70] = {0,2,0,4,2,6,4,6,6,4,6,2,4,0,2,0,0,2} -- Alt 0
+	vector_lib[0x71] = {0,0,0,5,B,B,0,3,6,3,5, 1} -- Alt 1
+	vector_lib[0x72] = {0,6,0,0,5,6,6,3,5,0} -- Alt 2
+	vector_lib[0x73] = {1,0,0,1,0,5,1,6,2,6,3,5,3,2,6,6,6,1} -- Alt 3
+	vector_lib[0x74] = {0,5,6,5,6,3,3,0,2,0,2,6} -- Alt 4
+	vector_lib[0x75] = {1,0,0,1,0,5,2,6,4,5,4,0,6,0,6,5} -- Alt 5
+	vector_lib[0x76] = {3,0,1,0,0,1,0,5,1,6,2,6,3,5,3,0,6,2,6,5} -- Alt 6
+	vector_lib[0x77] = {5,0,6,0,6,6,2,2,0,2} -- Alt 7
+	vector_lib[0x78] = {2,0,1,0,0,1,0,5,1,6,4,0,5,0,6,1,6,4,5,5,4,5,2,0} -- Alt 8
+	vector_lib[0x79] = {0,1,0,4,2,6,5,6,6,5,6,1,5,0,4,0,3,1,3,6} -- Alt 9
+	vector_lib[0x80] = {0,2,0,4,2,6,4,6,6,4,6,2,4,0,2,0,0,2} -- Alt 0
+	vector_lib[0x81] = {0,0,0,5,B,B,0,3,6,3,5, 1} -- Alt 1
+	vector_lib[0x82] = {0,6,0,0,5,6,6,3,5,0} -- Alt 2
+	vector_lib[0x83] = {1,0,0,1,0,5,1,6,2,6,3,5,3,2,6,6,6,1} -- Alt 3
+	vector_lib[0x84] = {0,5,6,5,6,3,3,0,2,0,2,6} -- Alt 4
+	vector_lib[0x85] = {1,0,0,1,0,5,2,6,4,5,4,0,6,0,6,5} -- Alt 5
+	vector_lib[0x86] = {3,0,1,0,0,1,0,5,1,6,2,6,3,5,3,0,6,2,6,5} -- Alt 6
+	vector_lib[0x87] = {5,0,6,0,6,6,2,2,0,2} -- Alt 7
+	vector_lib[0x88] = {2,0,1,0,0,1,0,5,1,6,4,0,5,0,6,1,6,4,5,5,4,5,2,0} -- Alt 8
+	vector_lib[0x89] = {0,1,0,4,2,6,5,6,6,5,6,1,5,0,4,0,3,1,3,6} -- Alt 9
+	vector_lib[0x8a] = {0,0,6,0,2,3,6,6,0,6}  -- Alt M
+	vector_lib[0x8b] = {0,0,6,0,2,3,6,6,0,6}  -- Alt M
+	vector_lib[0xb0] = {0,0,7,0,7,7,0,7,0,0,B,B,1,1,1,6} -- Block
 	vector_lib[0xdd] = {7,0,5,0,B,B,6,0,6,4,B,B,7,4,4,4,B,B,7,9,7,6,4,6,3,9,B,B,5,6,5,9,B,B,7,11,3,11,2,14,B,B,
 		1,16,7,16,7,19,3,19,3,16,B,B,7,22,2,21,B,B,0,20,0,21} -- Help (little H)
 	vector_lib[0xed] = {7,0,5,0,B,B,6,0,6,4,B,B,7,4,4,4,B,B,7,9,7,6,4,6,3,9,B,B,5,6,5,9,B,B,7,11,3,11,2,14,B,B,
-		1,16,7,16,7,19,3,19,3,16,B,B,7,22,2,21,B,B,0,20,0,21} -- Help
+		1,16,7,16,7,19,3,19,3,16,B,B,7,22,2,21,B,B,0,20,0,21} -- Alt Help
 	vector_lib[0xfb] = {5,1,6,2,6,5,5,6,4,6,2,3,B,B,0,3,0,3} -- question mark
-	vector_lib[0xff] = {5,2,7,2,7,4,5,4,5,2,B,B,5,3,2,3,0,1,B,B,2,3,0,5,B,B,4,0,3,1,3,5,4,6} -- jumpman lives
-
+	vector_lib[0xff] = {5,2,7,2,7,4,5,4,5,2,B,B,5,3,2,3,0,1,B,B,2,3,0,5,B,B,4,0,3,1,3,5,4,6} -- jumpman / stick man
 
 	function initialize()
 		mame_version = tonumber(emu.app_version())
@@ -214,20 +236,18 @@ function vectorkong.startplugin()
 	function draw_oilcan(y, x)
 		box(y+15,  x,  1,  16)  -- top lip
 		box(y,     x,  1,  16)  -- bottom lip
-		polyline({0,0,14,0,B,B,0,14,14,14,B,B,4,0,4,14,B,B,11,0,11,14}, y+1, x+1)  -- body of oil can
-		polyline({7,4,10,4,10,7,7,7,7,4,B,B,7,9,10,9,B,B,7,13,7,11,10,11}, y, x)  -- "OIL"
+		polyline({1,1,15,1,B,B,1,15,15,15,B,B,5,1,5,15,B,B,12,1,12,15,B,B,7,4,10,4,10,7,7,7,7,4,B,B,7,9,10,9,B,B,
+				  7,13,7,11,10,11}, y, x)
 	end
 
 	function draw_hammer(y, x)
-		polyline({5,0,7,0,8,1,8,8,7,9,5,9,4,8,4,1,5,0}, y, x)  -- hammer
-		box(y,   x+4, 4, 1)  -- bottom handle
-		box(y+8, x+4, 1, 1)  -- top handle
+		polyline({5,0,7,0,8,1,8,8,7,9,5,9,4,8,4,1,5,0,B,B,4,4,0,4,0,5,4,5,B,B,8,4,9,4,9,5,8,5}, y, x)  -- hammer
 	end
 
 	function draw_barrel(y, x)
 		-- draw an upright/stacked barrel
-		polyline({3,0,12,0,15,2,15,7,12,9,3,9,0,7,0,7,0,2,3,0},y,x)  -- barrel outline
-		polyline({1,1,1,8,B,B,14,1,14,8,B,B,2,3,13,3,B,B,2,6,13,6}, y, x) -- horizontal and vertical bands
+		polyline({3,0,12,0,15,2,15,7,12,9,3,9,0,7,0,7,0,2,3,0,B,B,1,1,1,8,B,B,14,1,14,8,B,B,2,3,13,3,B,B,
+				  2,6,13,6}, y, x) -- horizontal and vertical bands
 	end
 
 	function draw_ladder(y, x, h)
@@ -241,8 +261,7 @@ function vectorkong.startplugin()
 	function draw_girder(y1, x1, y2, x2)
 		-- draw parallel vectors (offset by 7 pixels) to form a girder.
 		polyline({y1,x1,y2,x2,B,B,y1+7,x1,y2+7,x2})
-		-- Fill the girders with optional zig zags
-		if enable_zigzags then
+		if enable_zigzags then  -- Fill the girders with optional zig zags
 			local _zig = 8  -- zigzag width 4 or 8 works well
 			for _x=x1, x2 - 1, _zig*2 do
 				_y = y1 + (((y2 - y1) / (x2 - x1)) * (_x - x1))
