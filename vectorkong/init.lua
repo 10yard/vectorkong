@@ -18,9 +18,10 @@ local vectorkong = exports
 function vectorkong.startplugin()
 	local mame_version
 	local vector_count
+	local is_girders, level, mode, mode_old
 	
 	-- Options
-	local enable_zigzags = false
+	local enable_zigzags = true
 	
 	-- Vector character library
 	local vector_lib = {}
@@ -34,7 +35,7 @@ function vectorkong.startplugin()
 	vector_lib[0x06] = {3,0,1,0,0,1,0,5,1,6,2,6,3,5,3,0,6,2,6,5} -- 6
 	vector_lib[0x07] = {6,0,6,6,0,2} -- 7
 	vector_lib[0x08] = {2,0,0,1,0,5,2,6,5,0,6,1,6,4,5,5,2,0} -- 8
-	vector_lib[0x09] = {0,1,0,4,2,6,5,6,6,5,6,2,5,0,4,0,3,1,3,6} -- 9
+	vector_lib[0x09] = {0,1,0,4,2,6,5,6,6,5,6,1,5,0,4,0,3,1,3,6} -- 9
 	vector_lib[0x11] = {0,0,4,0,6,3,4,6,0,6,B,B,2,6,2,0}  -- A
 	vector_lib[0x12] = {0,0,6,0,6,5,5,6,4,6,3,5,2,6,1,6,0,5,0,0}  -- B
 	vector_lib[0x13] = {1,6,0,5,0,2,2,0,4,0,6,2,6,5,5,6} -- C
@@ -97,13 +98,18 @@ function vectorkong.startplugin()
 	vector_lib[0x89] = {0,1,0,4,2,6,5,6,6,5,6,1,5,0,4,0,3,1,3,6} -- Alt 9
 	vector_lib[0x8a] = {0,0,6,0,2,3,6,6,0,6}  -- Alt M
 	vector_lib[0x8b] = {0,0,6,0,2,3,6,6,0,6}  -- Alt M
-	vector_lib[0x9f] = {2,0,0,2,0,13,2,15,5,15,7,13,7,2,5,0,2,0,B,B,5,3,5,7,B,B,5,5,2,5,B,B,2,8,5,8,4,10,5,12,2,12}  -- TM
-	vector_lib[0xb0] = {0,0,7,0,7,7,0,7,0,0,B,B,1,1,1,6} -- Block
-	vector_lib[0xdd] = {7,0,5,0,B,B,6,0,6,4,B,B,7,4,4,4,B,B,7,9,7,6,4,6,3,9,B,B,5,6,5,9,B,B,7,11,3,11,2,14,B,B,
-		1,16,7,16,7,19,3,19,3,16,B,B,7,22,2,21,B,B,0,20,0,21} -- Help (little H)
+	vector_lib[0x9f] = {2,0,0,2,0,13,2,15,5,15,7,13,7,2,5,0,2,0,B,B,5,3,5,7,B,B,5,5,2,5,B,B,2,8,5,8,4,10,5,12,2,12} -- TM
+	--vector_lib[0xb0] = {0,0,7,0,7,7,0,7,0,0,B,B,1,1,1,6} -- Block
+	vector_lib[0xb0] = {0,0,0,8,B,B,1,0,1,8,B,B,7,0,7,8,B,B,6,0,6,8} -- Block
+	vector_lib[0xb1] = {0,0,7,0,7,7,0,7,0,0} -- Box
+	vector_lib[0xb7] = {0,1,1,1,1,2,6,2,6,1,7,1,7,3,6,3,6,5,7,5,7,7,6,7,6,6,1,6,1,7,0,7,0,1} -- Rivet
+	vector_lib[0xdd] = {0,0,7,0,B,B,4,0,4,4,B,B,1,4,7,4,B,B,2,9,1,6,7,6,7,9,B,B,5,6,5,9,B,B,7,11,2,11,3,14,B,B,
+		3,16,7,16,7,18,6,19,5,18,5,16,B,B,7,22,5,21,B,B,3,21,3,21} -- Help (big H)
 	vector_lib[0xed] = {7,0,5,0,B,B,6,0,6,4,B,B,7,4,4,4,B,B,7,9,7,6,4,6,3,9,B,B,5,6,5,9,B,B,7,11,3,11,2,14,B,B,
-		1,16,7,16,7,19,3,19,3,16,B,B,7,22,2,21,B,B,0,20,0,21} -- Alt Help
+		1,16,7,16,7,19,3,19,3,16,B,B,7,22,2,21,B,B,0,20,0,21} -- Help (little H)
 	vector_lib[0xfb] = {5,1,6,2,6,5,5,6,4,6,2,3,B,B,0,3,0,3} -- question mark
+	vector_lib[0xfd] = {-1,0,7,0} -- vertical line
+	vector_lib[0xfe] = {0,0,7,0,7,7,0,7,0,0} -- cross
 	vector_lib[0xff] = {5,2,7,2,7,4,5,4,5,2,B,B,5,3,2,3,0,1,B,B,2,3,0,5,B,B,4,0,3,1,3,5,4,6} -- jumpman / stick man
 
 	function initialize()
@@ -123,18 +129,22 @@ function vectorkong.startplugin()
 	function main()
 		if cpu ~= nil then
 			vector_count = 0
-			mode1 = mem:read_u8(0x6005)  -- 1-attract mode, 2-credits entered waiting to start, 3-when playing game
-			mode2 = mem:read_u8(0x600a)  -- 7-climb scene, 10-how high, 15-dead, 16-game over
-			stage = mem:read_u8(0x6227)  -- 1-girders, 2-pies, 3-springs, 4-rivets
+			level = read(0x6229)
+			mode = read(0x600a)
+			is_girders = read(0x77bf, 240)
+			is_complete = mode_old == 22 and mode == 8
+			is_intro = mode == 7
 
-			print(tostring(mode1).."  "..tostring(mode2))
-			--cls()
-			if stage ==1 and (mode2 >= 2 and mode2 <= 4) or (mode2 >= 11 and mode2 <= 20) then
-				draw_girders_stage()
-			end
+			cls()
+			if is_complete then write(0x6227, 1);write(0x6229, level+1) end  -- force girders stage for now
+			if is_intro then write(0x600a, 8) end  -- skip the intro/climb scene
+			if is_girders then draw_girders_stage() end
 			draw_vector_characters()
+
 			--debug_limits(1000)
 			debug_vector_count()
+
+			mode_old = mode
 		end
 	end
 
@@ -255,8 +265,8 @@ function vectorkong.startplugin()
 
 	function draw_barrel(y, x)
 		-- draw an upright/stacked barrel
-		polyline({3,0,12,0,15,2,15,7,12,9,3,9,0,7,0,7,0,2,3,0,B,B,1,1,1,8,B,B,14,1,14,8,B,B,2,3,13,3,B,B,
-				  2,6,13,6}, y, x) -- horizontal and vertical bands
+		polyline({3,0,12,0,15,2,15,7,12,9,3,9,0,7,0,7,0,2,3,0,B,B,1,2,1,7,B,B,14,2,14,7,B,B,2,3,13,3,B,B,
+				  2,6,13,6}, y, x)
 	end
 
 	function draw_ladder(y, x, h)
@@ -271,11 +281,13 @@ function vectorkong.startplugin()
 		-- draw parallel vectors (offset by 7 pixels) to form a girder.
 		polyline({y1,x1,y2,x2,B,B,y1+7,x1,y2+7,x2})
 		if enable_zigzags then  -- Fill the girders with optional zig zags
-			local _zig = 8  -- zigzag width 4 or 8 works well
+			local _zig = 4  -- zigzag width 4 or 8 works well
+			local _cnt = 0
 			for _x=x1, x2 - 1, _zig*2 do
 				_y = y1 + (((y2 - y1) / (x2 - x1)) * (_x - x1))
-				vector(_y+1,_x,_y+6,_x+_zig)
-				vector(_y+6,_x+_zig,_y+1,_x+_zig*2)
+				-- polyline({2,0,5,_zig,2,_zig*2}, _y, _x)
+				--polyline({2,0,5,_zig}, _y, _x)
+				if _cnt % 2 == 0 then polyline({3,_zig,4,_zig*2,3,_zig*3}, _y, _x) end ; _cnt = _cnt + 1
 			end
 		end
 	end
@@ -289,6 +301,22 @@ function vectorkong.startplugin()
 				_addr = _addr + 1
 			end
 		end
+	end
+
+	-- General functions
+	--------------------
+	function read(address, comparison)
+		-- return data from memory address or boolean when the comparison value is provided
+		_d = mem:read_u8(address)
+		if comparison then
+			return _d == comparison
+		else
+			return _d
+		end
+	end
+
+	function write(address, value)
+		mem:write_u8(address, value)
 	end
 
 	-- Debugging functions
