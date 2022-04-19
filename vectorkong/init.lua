@@ -108,7 +108,7 @@ function vectorkong.startplugin()
 	vector_lib[0xfe] = {0,0,7,0,7,7,0,7,0,0} -- cross
 	vector_lib[0xff] = {5,2,7,2,7,4,5,4,5,2,BR,BR,5,3,2,3,0,1,BR,BR,2,3,0,5,BR,BR,4,0,3,1,3,5,4,6} -- jumpman / stick man
 	-- non character objects:
-	vector_lib["oilcan"] = {1,1,15,1,BR,BR,1,15,15,15,BR,BR,5,1,5,15,BR,BR,12,1,12,15,BR,BR,7,4,10,4,10,7,7,7,7,4,BR,BR,7,9,10,9,BR,BR, 7,13,7,11,10,11,BR,BR,15,0,16,0,16,16,15,16,15,0,BR,BR,1,0,0,0,0,16,1,16,1,0}
+	vector_lib["oilcan"] = {1,1,15,1,BR,BR,1,15,15,15,BR,BR,5,1,5,15,BR,BR,12,1,12,15,BR,BR,7,4,10,4,10,7,7,7,7,4,BR,BR,7,9,10,9,BR,BR,7,13,7,11,10,11,BR,BR,15,0,16,0,16,16,15,16,15,0,BR,BR,1,0,0,0,0,16,1,16,1,0}
 	vector_lib["hammer"] = {5,0,7,0,8,1,8,8,7,9,5,9,4,8,4,1,5,0,BR,BR,4,4,0,4,0,5,4,5,BR,BR,8,4,9,4,9,5,8,5}
 	vector_lib["barrel"] = {3,0,12,0,15,2,15,7,12,9,3,9,0,7,0,7,0,2,3,0,BR,BR,1,2,1,7,BR,BR,14,2,14,7,BR,BR,2,3,13,3,BR,BR,2,6,13,6}
 
@@ -235,7 +235,7 @@ function vectorkong.startplugin()
 
 	function intensity()
 		-- we can vary the brightness of the vectors
-		return ({0xbbffffff, 0xddffffff, 0xffffffff})[math.random(3)]
+		if not mac.paused then return ({0xbbffffff, 0xddffffff, 0xffffffff})[math.random(3)] else return 0xffffffff end
 	end
 
 	function wobble()
@@ -273,9 +273,10 @@ function vectorkong.startplugin()
 			local _cnt = 0
 			for _x=x1, x2 - 1, _zig*2 do
 				_y = y1 + (((y2 - y1) / (x2 - x1)) * (_x - x1))
-				-- polyline({2,0,5,_zig,2,_zig*2}, _y, _x)
+				--polyline({2,0,5,_zig,2,_zig*2}, _y, _x)
 				--polyline({2,0,5,_zig}, _y, _x)
 				if _cnt % 2 == 0 then polyline({3,_zig,4,_zig*2,3,_zig*3}, _y, _x) end ; _cnt = _cnt + 1
+				--if _cnt % 2 == 0 then polyline({2,_zig,5,_zig*2,2,_zig*3}, _y, _x) end ; _cnt = _cnt + 1
 			end
 		end
 	end
