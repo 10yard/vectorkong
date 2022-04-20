@@ -18,10 +18,10 @@ local vectorkong = exports
 function vectorkong.startplugin()
 	local mame_version
 	local vector_count
-	local is_girders, store_mode
+	local is_stage1, game_mode, last_mode
 
 	-- Constants for RAM addresses
-	local MODE, STAGE, LEVEL = 0x600a, 0x6227, 0x6229
+	local MODE, STAGE, LEVEL, GIRDER = 0x600a, 0x6227, 0x6229, 0x77bf
 
 	-- Options
 	local enable_zigzags = true
@@ -40,7 +40,7 @@ function vectorkong.startplugin()
 	vector_lib[0x08] = {2,0,0,1,0,5,2,6,5,0,6,1,6,4,5,5,2,0} -- 8
 	vector_lib[0x09] = {0,1,0,4,2,6,5,6,6,5,6,1,5,0,4,0,3,1,3,6} -- 9
 	vector_lib[0x11] = {0,0,4,0,6,3,4,6,0,6,BR,BR,2,6,2,0}  -- A
-	vector_lib[0x12] = {0,0,6,0,6,5,5,6,4,6,3,5,2,6,1,6,0,5,0,0}  -- B
+	vector_lib[0x12] = {0,0,6,0,6,5,5,6,4,6,3,5,2,6,1,6,0,5,0,0,BR,BR,3,0,3,4}  -- B
 	vector_lib[0x13] = {1,6,0,5,0,2,2,0,4,0,6,2,6,5,5,6} -- C
 	vector_lib[0x14] = {0,0,6,0,6,4,4,6,2,6,0,4,0,0} -- D
 	vector_lib[0x15] = {0,5,0,0,6,0,6,5,BR,BR,3,0,3,4} -- E
@@ -75,28 +75,28 @@ function vectorkong.startplugin()
 	vector_lib[0x44] = {0,5,4,5,4,7,2,7,0,8,BR,BR,2,5,2,7,BR,BR,4,10,1,10,0,11,0,12,1,13,4,13,BR,BR,0,15,4,15,4,17,2,17,2,18,0,18,0,15,BR,BR,2,15,2,17,BR,BR,0,23,0,21,4,21,4,23,BR,BR,2,21,2,22,BR,BR,0,25,4,25,0,28,4,28,BR,BR,0,30,4,30,4,32,3,33,1,33,0,32,0,30} -- rub / end
 	vector_lib[0x49] = {0,4,2,2,5,2,7,4,7,8,5,10,2,10,0,8,0,4,BR,BR,2,7,2,5,5,5,5,7} -- copyright
 	vector_lib[0x6c] = {2,0,2,4,3,5,4,4,5,5,6,4,6,0,2,0,BR,BR,4,4,4,0,BR,BR,3,7,2,8,2,11,3,12,5,12,6,11,6,8,5,7,3,7,BR,BR,2,14,6,14,2,19,6,19,BR,BR,6,21,3,21,2,22,2,25,3,26,6,26,BR,BR,2,28,2,31,4,31,4,28,5,28,6,29,6,31, B,BR,6,-2,6,-5,-12,-5,-12,36,6,36,6,33,BR,BR,0,-3,-10,-3,-10,34,0,34,0,-3} -- bonus
-	vector_lib[0x70] = {0,2,0,4,2,6,4,6,6,4,6,2,4,0,2,0,0,2} -- Alt 0
-	vector_lib[0x71] = {0,0,0,5,BR,BR,0,3,6,3,5, 1} -- Alt 1
-	vector_lib[0x72] = {0,6,0,0,5,6,6,3,5,0} -- Alt 2
-	vector_lib[0x73] = {1,0,0,1,0,5,1,6,2,6,3,5,3,2,6,6,6,1} -- Alt 3
-	vector_lib[0x74] = {0,5,6,5,6,3,3,0,2,0,2,6} -- Alt 4
-	vector_lib[0x75] = {1,0,0,1,0,5,2,6,4,5,4,0,6,0,6,5} -- Alt 5
-	vector_lib[0x76] = {3,0,1,0,0,1,0,5,1,6,2,6,3,5,3,0,6,2,6,5} -- Alt 6
-	vector_lib[0x77] = {5,0,6,0,6,6,2,2,0,2} -- Alt 7
-	vector_lib[0x78] = {2,0,1,0,0,1,0,5,1,6,4,0,5,0,6,1,6,4,5,5,4,5,2,0} -- Alt 8
-	vector_lib[0x79] = {0,1,0,4,2,6,5,6,6,5,6,1,5,0,4,0,3,1,3,6} -- Alt 9
-	vector_lib[0x80] = {0,2,0,4,2,6,4,6,6,4,6,2,4,0,2,0,0,2} -- Alt 0
-	vector_lib[0x81] = {0,0,0,5,BR,BR,0,3,6,3,5, 1} -- Alt 1
-	vector_lib[0x82] = {0,6,0,0,5,6,6,3,5,0} -- Alt 2
-	vector_lib[0x83] = {1,0,0,1,0,5,1,6,2,6,3,5,3,2,6,6,6,1} -- Alt 3
-	vector_lib[0x84] = {0,5,6,5,6,3,3,0,2,0,2,6} -- Alt 4
-	vector_lib[0x85] = {1,0,0,1,0,5,2,6,4,5,4,0,6,0,6,5} -- Alt 5
-	vector_lib[0x86] = {3,0,1,0,0,1,0,5,1,6,2,6,3,5,3,0,6,2,6,5} -- Alt 6
-	vector_lib[0x87] = {5,0,6,0,6,6,2,2,0,2} -- Alt 7
-	vector_lib[0x88] = {2,0,1,0,0,1,0,5,1,6,4,0,5,0,6,1,6,4,5,5,4,5,2,0} -- Alt 8
-	vector_lib[0x89] = {0,1,0,4,2,6,5,6,6,5,6,1,5,0,4,0,3,1,3,6} -- Alt 9
-	vector_lib[0x8a] = {0,0,6,0,2,3,6,6,0,6}  -- Alt M
-	vector_lib[0x8b] = {0,0,6,0,2,3,6,6,0,6}  -- Alt M
+	vector_lib[0x70] = vector_lib[0x00] -- Alternative 0-9
+	vector_lib[0x71] = vector_lib[0x01] --
+	vector_lib[0x72] = vector_lib[0x02] --
+	vector_lib[0x73] = vector_lib[0x03] --
+	vector_lib[0x74] = vector_lib[0x04] --
+	vector_lib[0x75] = vector_lib[0x05] --
+	vector_lib[0x76] = vector_lib[0x06] --
+	vector_lib[0x77] = vector_lib[0x07] --
+	vector_lib[0x78] = vector_lib[0x08] --
+	vector_lib[0x79] = vector_lib[0x09] --
+	vector_lib[0x80] = vector_lib[0x00] -- Alternative 0-9
+	vector_lib[0x81] = vector_lib[0x01] --
+	vector_lib[0x82] = vector_lib[0x02] --
+	vector_lib[0x83] = vector_lib[0x03] --
+	vector_lib[0x84] = vector_lib[0x04] --
+	vector_lib[0x85] = vector_lib[0x05] --
+	vector_lib[0x86] = vector_lib[0x06] --
+	vector_lib[0x87] = vector_lib[0x07] --
+	vector_lib[0x88] = vector_lib[0x08] --
+	vector_lib[0x89] = vector_lib[0x09] --
+	vector_lib[0x8a] = vector_lib[0x1d] -- Alternative M's
+	vector_lib[0x8b] = vector_lib[0x1d] --
 	vector_lib[0x9f] = {2,0,0,2,0,13,2,15,5,15,7,13,7,2,5,0,2,0,BR,BR,5,3,5,7,BR,BR,5,5,2,5,BR,BR,2,8,5,8,4,10,5,12,2,12} -- TM
 	vector_lib[0xb0] = {0,0,0,8,BR,BR,1,0,1,8,BR,BR,7,0,7,8,BR,BR,6,0,6,8} -- Block
 	vector_lib[0xb1] = {0,0,7,0,7,7,0,7,0,0} -- Box
@@ -129,24 +129,23 @@ function vectorkong.startplugin()
 	function main()
 		if cpu ~= nil then
 			vector_count = 0
-			is_girders = read(0x77bf, 0xf0)
-			is_complete = store_mode == 22 and read(MODE, 8)
-			store_mode = read(MODE)
-			is_intro = read(store_mode, 7)
+			game_mode = read(MODE)
 
-			cls()
-			if is_complete then write(STAGE, 1); write(LEVEL, read(LEVEL)+1) end  -- force girders stage for now
-			if is_intro then write(store_mode, 8) end  -- skip the intro/climb scene
-			if is_girders then draw_girders_stage() end
-			draw_vector_characters()
+			--cls()
+			if game_mode == 0x07 then write(MODE, 0x08) end                              -- skip the intro/climb scene
+			if game_mode == 0x08 and last_mode == 0x16 then debug_stay_on_girders() end  -- stay on the girder stage
+
+			if read(GIRDER, 0xf0) then draw_girder_stage() end                           -- draw girder stage
+			draw_vector_characters()                                                     -- draw characters
 
 			--debug_limits(1000)
-			debug_vector_count()
+			--debug_vector_count()
+			last_mode = game_mode
 
 		end
 	end
 
-	function draw_girders_stage()
+	function draw_girder_stage()
 		-- 1st girder
 		draw_girder(  1,   0,   1, 111, "R")  -- flat section
 		draw_girder(  1, 111,   8, 223, "L")  -- sloped section
@@ -323,6 +322,11 @@ function vectorkong.startplugin()
 			for _=1, limit / 4 do box(_rnd(216), _rnd(200), _rnd(32)+8, _rnd(24)+8) end  -- boxes
 		end
 		debug_vector_count()
+	end
+
+	function debug_stay_on_girders()
+		write(STAGE, 1);
+		write(LEVEL, read(LEVEL) + 1)
 	end
 
 	-- event registration
