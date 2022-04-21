@@ -18,7 +18,7 @@ local vectorkong = exports
 function vectorkong.startplugin()
 	local mame_version
 	local vector_count
-	local is_stage1, game_mode, last_mode
+	local game_mode, last_mode
 
 	-- Constants for RAM addresses
 	local MODE, STAGE, LEVEL, GIRDER = 0x600a, 0x6227, 0x6229, 0x77bf
@@ -131,7 +131,7 @@ function vectorkong.startplugin()
 			vector_count = 0
 			game_mode = read(MODE)
 
-			--cls()
+			cls()
 			if game_mode == 0x07 then write(MODE, 0x08) end                              -- skip the intro/climb scene
 			if game_mode == 0x08 and last_mode == 0x16 then debug_stay_on_girders() end  -- stay on the girder stage
 
@@ -234,12 +234,13 @@ function vectorkong.startplugin()
 
 	function intensity()
 		-- we can vary the brightness of the vectors
-		if not mac.paused then return ({0xbbffffff, 0xddffffff, 0xffffffff})[math.random(3)] else return 0xffffffff end
+		if not mac.paused then return ({0xddffffff, 0xeeffffff, 0xffffffff})[math.random(3)] else return 0xffffffff end
 	end
 
 	function wobble()
 		-- random change of the vector offset
-		if not mac.paused then return math.random(-40, 60) / 100 else return 0 end
+		--if not mac.paused then return math.random(-40, 60) / 100 else return 0 end
+		return 0
 	end
 
 	function cls()
