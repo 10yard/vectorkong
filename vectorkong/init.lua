@@ -114,7 +114,7 @@ function vectorkong.startplugin()
 	vector_lib["oilcan"] = {1,1,15,1,BR,BR,1,15,15,15,BR,BR,5,1,5,15,BR,BR,12,1,12,15,BR,BR,7,4,10,4,10,7,7,7,7,4,BR,BR,7,9,10,9,BR,BR,7,13,7,11,10,11,BR,BR,15,0,16,0,16,16,15,16,15,0,BR,BR,1,0,0,0,0,16,1,16,1,0}
 	vector_lib["hammer"] = {5,0,7,0,8,1,8,8,7,9,5,9,4,8,4,1,5,0,BR,BR,4,4,0,4,0,5,4,5,BR,BR,8,4,9,4,9,5,8,5}
 	vector_lib["barrel"] = {3,0,12,0,15,2,15,7,12,9,3,9,0,7,0,7,0,2,3,0,BR,BR,1,2,1,7,BR,BR,14,2,14,7,BR,BR,2,3,13,3,BR,BR,2,6,13,6}
-	vector_lib["flame1"] = {0,4,2,2,3,3,9,0,4,5,6,6,10,4,6,8,5,7,1,10,3,11,4,12,9,10,4,14,0,12}
+	vector_lib["flames"] = {0,4,2,2,3,3,8,0,4,5,5,6,9,4,5,8,4,7,2,10,2,11,4,12,9,10,4,14,0,12}
 
 	function initialize()
 		mame_version = tonumber(emu.app_version())
@@ -291,7 +291,16 @@ function vectorkong.startplugin()
 
 	function draw_oilcan_and_flames(y, x)
 		draw_object("oilcan",  y, x)
-		draw_object("flame1",  y+16, x)
+		if not read(0x6a29, 0x70) then  -- is the oilcan on fire?
+			local _data = {}
+			local _flames = vector_lib["flames"]
+			for _i=1, #_flames, 2 do
+				if _i > 2 and _i < #_flames -2 then _adjust = math.random(-2,2) else _adjust = 0 end
+				table.insert(_data, _flames[_i] + _adjust)
+				table.insert(_data, _flames[_i+1])
+			end
+			polyline(_data, y+16, x)
+		end
 	end
 
 	function draw_vector_characters()
