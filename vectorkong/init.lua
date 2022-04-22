@@ -17,7 +17,7 @@ local vectorkong = exports
 
 function vectorkong.startplugin()
 	local mame_version
-	local vector_count
+	local vector_count, vector_color
 	local game_mode, last_mode
 
 	-- Constants for RAM addresses
@@ -133,6 +133,7 @@ function vectorkong.startplugin()
 	function main()
 		if cpu ~= nil then
 			vector_count = 0
+			vector_color = 0xffffffff
 			game_mode = read(MODE)
 
 			--cls()
@@ -206,7 +207,8 @@ function vectorkong.startplugin()
 
 	function vector(y1, x1, y2, x2)
 		-- draw a single vector
-		scr:draw_line(y1+wobble(), x1+wobble(), y2+wobble(), x2+wobble(), intensity())
+		scr:draw_line(y1+wobble(), x1+wobble(), y2+wobble(), x2+wobble(), vector_color)
+		--scr:draw_line(y1+wobble(), x1+wobble(), y2+wobble(), x2+wobble(), intensity())
 		vector_count = vector_count + 1
 	end
 
@@ -299,7 +301,9 @@ function vectorkong.startplugin()
 				table.insert(_data, _flames[_i] + _adjust)
 				table.insert(_data, _flames[_i+1])
 			end
+			vector_color = ({0xfff0f050, 0xfff00000})[math.random(1,2)]
 			polyline(_data, y+16, x)
+			vector_color = 0xffffffff
 		end
 	end
 
