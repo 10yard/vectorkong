@@ -20,9 +20,10 @@ function vectorkong.startplugin()
 	local vector_count, vector_color
 	local game_mode, last_mode
 
-	-- Constants for RAM addresses
+	-- Constants
 	local MODE, STAGE, LEVEL = 0x600a, 0x6227, 0x6229
 	local VRAM_TR, VRAM_BL = 0x7440, 0x77bf  -- top-right and bottom-left corner bytes
+    local WHITE, YELLOW, RED = 0xffffffff, 0xfff0f050, 0xfff00000
 
 	-- Options
 	local enable_zigzags = true
@@ -133,10 +134,10 @@ function vectorkong.startplugin()
 	function main()
 		if cpu ~= nil then
 			vector_count = 0
-			vector_color = 0xffffffff
+			vector_color = WHITE
 			game_mode = read(MODE)
 
-			--cls()
+			cls()
 
 			-- skip the intro scene and stay on girders stage
 			if game_mode == 0x07 then write(MODE, 0x08) end
@@ -148,7 +149,7 @@ function vectorkong.startplugin()
 			draw_vector_characters()
 
 			--debug_limits(1000)
-			--debug_vector_count()
+			debug_vector_count()
 			last_mode = game_mode
 
 		end
@@ -245,7 +246,7 @@ function vectorkong.startplugin()
 	function intensity()
 		-- we can vary the brightness of the vectors
 		--if not mac.paused then return ({0xddffffff, 0xeeffffff, 0xffffffff})[math.random(3)] else return 0xffffffff end
-		return 0xffffffff
+		return WHITE
 	end
 
 	function wobble()
@@ -301,9 +302,9 @@ function vectorkong.startplugin()
 				table.insert(_data, _flames[_i] + _adjust)
 				table.insert(_data, _flames[_i+1])
 			end
-			vector_color = ({0xfff0f050, 0xfff00000})[math.random(1,2)]
+			vector_color = ({YELLOW, RED})[math.random(2)]
 			polyline(_data, y+16, x)
-			vector_color = 0xffffffff
+			vector_color = WHITE
 		end
 	end
 
