@@ -21,7 +21,8 @@ function vectorkong.startplugin()
 	local game_mode, last_mode
 
 	-- Constants for RAM addresses
-	local MODE, STAGE, LEVEL, GIRDER = 0x600a, 0x6227, 0x6229, 0x77bf
+	local MODE, STAGE, LEVEL = 0x600a, 0x6227, 0x6229
+	local VRAM_TR, VRAM_BL = 0x7440, 0x77bf  -- top-right and bottom-left corner bytes
 
 	-- Options
 	local enable_zigzags = true
@@ -70,11 +71,13 @@ function vectorkong.startplugin()
 	vector_lib[0x2d] = {5,0,5,6} -- underscore
 	vector_lib[0x2e] = {4,3,4,3,BR,BR,2,3,2,3} -- colon
 	vector_lib[0x2f] = {5,0,5,6} -- Alt underscore
+	vector_lib[0x30] = {0,2,2,0,4,0,6,2} -- Left bracket
+	vector_lib[0x31] = {0,2,2,4,4,4,6,2} -- Right bracket
 	vector_lib[0x34] = {2,0,2,5,BR,BR,4,0,4,5} -- equals
 	vector_lib[0x35] = {3,0,3,5} -- dash
 	vector_lib[0x44] = {0,5,4,5,4,7,2,7,0,8,BR,BR,2,5,2,7,BR,BR,4,10,1,10,0,11,0,12,1,13,4,13,BR,BR,0,15,4,15,4,17,2,17,2,18,0,18,0,15,BR,BR,2,15,2,17,BR,BR,0,23,0,21,4,21,4,23,BR,BR,2,21,2,22,BR,BR,0,25,4,25,0,28,4,28,BR,BR,0,30,4,30,4,32,3,33,1,33,0,32,0,30} -- rub / end
 	vector_lib[0x49] = {0,4,2,2,5,2,7,4,7,8,5,10,2,10,0,8,0,4,BR,BR,2,7,2,5,5,5,5,7} -- copyright
-	vector_lib[0x6c] = {2,0,2,4,3,5,4,4,5,5,6,4,6,0,2,0,BR,BR,4,4,4,0,BR,BR,3,7,2,8,2,11,3,12,5,12,6,11,6,8,5,7,3,7,BR,BR,2,14,6,14,2,19,6,19,BR,BR,6,21,3,21,2,22,2,25,3,26,6,26,BR,BR,2,28,2,31,4,31,4,28,5,28,6,29,6,31, B,BR,6,-2,6,-5,-12,-5,-12,36,6,36,6,33,BR,BR,0,-3,-10,-3,-10,34,0,34,0,-3} -- bonus
+	vector_lib[0x6c] = {2,0,2,4,3,5,4,4,5,5,6,4,6,0,2,0,BR,BR,4,4,4,0,BR,BR,3,7,2,8,2,11,3,12,5,12,6,11,6,8,5,7,3,7,BR,BR,2,14,6,14,2,19,6,19,BR,BR,6,21,3,21,2,22,2,25,3,26,6,26,BR,BR,2,28,2,31,4,31,4,28,5,28,6,29,6,31,BR,BR,6,-2,6,-5,-12,-5,-12,36,6,36,6,33,BR,BR,0,-3,-10,-3,-10,34,0,34,0,-3} -- bonus
 	vector_lib[0x70] = vector_lib[0x00] -- Alternative 0-9
 	vector_lib[0x71] = vector_lib[0x01] --
 	vector_lib[0x72] = vector_lib[0x02] --
@@ -111,6 +114,7 @@ function vectorkong.startplugin()
 	vector_lib["oilcan"] = {1,1,15,1,BR,BR,1,15,15,15,BR,BR,5,1,5,15,BR,BR,12,1,12,15,BR,BR,7,4,10,4,10,7,7,7,7,4,BR,BR,7,9,10,9,BR,BR,7,13,7,11,10,11,BR,BR,15,0,16,0,16,16,15,16,15,0,BR,BR,1,0,0,0,0,16,1,16,1,0}
 	vector_lib["hammer"] = {5,0,7,0,8,1,8,8,7,9,5,9,4,8,4,1,5,0,BR,BR,4,4,0,4,0,5,4,5,BR,BR,8,4,9,4,9,5,8,5}
 	vector_lib["barrel"] = {3,0,12,0,15,2,15,7,12,9,3,9,0,7,0,7,0,2,3,0,BR,BR,1,2,1,7,BR,BR,14,2,14,7,BR,BR,2,3,13,3,BR,BR,2,6,13,6}
+	vector_lib["flame1"] = {0,4,2,2,3,3,9,0,4,5,6,6,10,4,6,8,5,7,1,10,3,11,4,12,9,10,4,14,0,12}
 
 	function initialize()
 		mame_version = tonumber(emu.app_version())
@@ -131,12 +135,16 @@ function vectorkong.startplugin()
 			vector_count = 0
 			game_mode = read(MODE)
 
-			cls()
-			if game_mode == 0x07 then write(MODE, 0x08) end                              -- skip the intro/climb scene
-			if game_mode == 0x08 and last_mode == 0x16 then debug_stay_on_girders() end  -- stay on the girder stage
+			--cls()
 
-			if read(GIRDER, 0xf0) then draw_girder_stage() end                           -- draw girder stage
-			draw_vector_characters()                                                     -- draw characters
+			-- skip the intro scene and stay on girders stage
+			if game_mode == 0x07 then write(MODE, 0x08) end
+			if game_mode == 0x08 and last_mode == 0x16 then debug_stay_on_girders() end
+
+			-- draw girder background when we are on girders stage
+			if read(VRAM_BL, 0xf0) then draw_girder_stage() end
+
+			draw_vector_characters()
 
 			--debug_limits(1000)
 			--debug_vector_count()
@@ -152,7 +160,7 @@ function vectorkong.startplugin()
 		draw_ladder(  8,  80,   8) -- broken ladder bottom
 		draw_ladder( 32,  80,   4) -- broken ladder top
 		draw_ladder( 13, 184,  17) -- right ladder
-		draw_object("oilcan",  8, 16)
+		draw_oilcan_and_flames(8, 16)
 
 		-- 2nd Girder
 		draw_girder( 41,   0,  29, 207)
@@ -234,12 +242,12 @@ function vectorkong.startplugin()
 
 	function intensity()
 		-- we can vary the brightness of the vectors
-		if not mac.paused then return ({0xddffffff, 0xeeffffff, 0xffffffff})[math.random(3)] else return 0xffffffff end
+		--if not mac.paused then return ({0xddffffff, 0xeeffffff, 0xffffffff})[math.random(3)] else return 0xffffffff end
+		return 0xffffffff
 	end
 
 	function wobble()
 		-- random change of the vector offset
-		--if not mac.paused then return math.random(-40, 60) / 100 else return 0 end
 		return 0
 	end
 
@@ -273,17 +281,22 @@ function vectorkong.startplugin()
 			local _cnt = 0
 			for _x=x1, x2 - 1, _zig*2 do
 				_y = y1 + (((y2 - y1) / (x2 - x1)) * (_x - x1))
-				--polyline({2,0,5,_zig,2,_zig*2}, _y, _x)
-				--polyline({2,0,5,_zig}, _y, _x)
 				if _cnt % 2 == 0 then polyline({3,_zig,4,_zig*2,3,_zig*3}, _y, _x) end ; _cnt = _cnt + 1
 				--if _cnt % 2 == 0 then polyline({2,_zig,5,_zig*2,2,_zig*3}, _y, _x) end ; _cnt = _cnt + 1
+				--polyline({2,0,5,_zig,2,_zig*2}, _y, _x)
+				--polyline({2,0,5,_zig}, _y, _x)
 			end
 		end
 	end
 
+	function draw_oilcan_and_flames(y, x)
+		draw_object("oilcan",  y, x)
+		draw_object("flame1",  y+16, x)
+	end
+
 	function draw_vector_characters()
 		-- Output vector characters based on contents of video ram ($7400-77ff)
-		local _addr = 0x7440
+		local _addr = VRAM_TR
 		for _x=223, 0, -8 do
 			for _y=255, 0, -8 do
 				polyline(vector_lib[mem:read_u8(_addr)], _y - 6, _x - 6)
