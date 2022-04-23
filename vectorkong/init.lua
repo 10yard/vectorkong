@@ -23,7 +23,7 @@ function vectorkong.startplugin()
 	-- Constants
 	local MODE, STAGE, LEVEL = 0x600a, 0x6227, 0x6229
 	local VRAM_TR, VRAM_BL = 0x7440, 0x77bf  -- top-right and bottom-left corner bytes
-    local WHITE, YELLOW, RED = 0xffffffff, 0xfff0f050, 0xfff00000
+    local WHITE, YELLOW, ORANGE, RED = 0xffffffff, 0xfff0f050, 0xfff4ba15, 0xfff00000
 
 	-- Options
 	local enable_zigzags = true
@@ -116,6 +116,7 @@ function vectorkong.startplugin()
 	vector_lib["hammer"] = {5,0,7,0,8,1,8,8,7,9,5,9,4,8,4,1,5,0,BR,BR,4,4,0,4,0,5,4,5,BR,BR,8,4,9,4,9,5,8,5}
 	vector_lib["barrel"] = {3,0,12,0,15,2,15,7,12,9,3,9,0,7,0,7,0,2,3,0,BR,BR,1,2,1,7,BR,BR,14,2,14,7,BR,BR,2,3,13,3,BR,BR,2,6,13,6}
 	vector_lib["flames"] = {0,4,2,2,3,3,8,0,4,5,5,6,9,4,5,8,4,7,2,10,2,11,4,12,9,10,4,14,0,12}
+	vector_lib["simple"] = {0,0,0,8,BR,BR,6,0,6,8} -- Simple Block for Title Screen
 
 	function initialize()
 		mame_version = tonumber(emu.app_version())
@@ -137,14 +138,15 @@ function vectorkong.startplugin()
 			vector_color = WHITE
 			game_mode = read(MODE)
 
-			cls()
+			--cls()
 
 			-- skip the intro scene and stay on girders stage
 			if game_mode == 0x07 then write(MODE, 0x08) end
 			if game_mode == 0x08 and last_mode == 0x16 then debug_stay_on_girders() end
 
-			-- draw girder background when we are on girders stage
+			-- handle stage backgrounds
 			if read(VRAM_BL, 0xf0) then draw_girder_stage() end
+			if read(VRAM_BL, 0xb0) then draw_rivet_stage() end
 
 			draw_vector_characters()
 
@@ -204,6 +206,10 @@ function vectorkong.startplugin()
 
 		-- Pauline's girder
 		draw_girder(193,  88, 193, 136, "L")
+	end
+
+	function draw_rivet_stage()
+		-- we'll need ladders on this stage too
 	end
 
 	function vector(y1, x1, y2, x2)
@@ -302,7 +308,7 @@ function vectorkong.startplugin()
 				table.insert(_data, _flames[_i] + _adjust)
 				table.insert(_data, _flames[_i+1])
 			end
-			vector_color = ({YELLOW, RED})[math.random(2)]
+			vector_color = ({YELLOW, ORANGE, RED})[math.random(3)]
 			polyline(_data, y+16, x)
 			vector_color = WHITE
 		end
