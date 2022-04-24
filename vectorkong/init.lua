@@ -18,15 +18,12 @@ local vectorkong = exports
 function vectorkong.startplugin()
 	local mame_version
 	local vector_count, vector_color
-	local game_mode, last_mode
+	local game_mode, last_mode, enable_zigzags
 
 	-- Constants
 	local MODE, STAGE, LEVEL = 0x600a, 0x6227, 0x6229
 	local VRAM_TR, VRAM_BL = 0x7440, 0x77bf  -- top-right and bottom-left corner bytes
     local WHITE, YELLOW, ORANGE, RED = 0xffffffff, 0xfff0f050, 0xfff4ba15, 0xfff00000
-
-	-- Options
-	local enable_zigzags = true
 
 	-- Vector character library
 	local BR = 0xffff  -- break in a vector chain
@@ -102,7 +99,9 @@ function vectorkong.startplugin()
 	vector_lib[0x8a] = vector_lib[0x1d] -- Alternative M's
 	vector_lib[0x8b] = vector_lib[0x1d] --
 	vector_lib[0x9f] = {2,0,0,2,0,13,2,15,5,15,7,13,7,2,5,0,2,0,BR,BR,5,3,5,7,BR,BR,5,5,2,5,BR,BR,2,8,5,8,4,10,5,12,2,12} -- TM
-	vector_lib[0xb0] = {0,0,0,8,BR,BR,1,0,1,8,BR,BR,7,0,7,8,BR,BR,6,0,6,8} -- Block
+	vector_lib[0xb0a] = {0,0,0,8,BR,BR,6,0,6,8} -- Simple Block for Title Screen
+	vector_lib[0xb0b] = {4,2,4,3,3,3} -- Rivet block
+	vector_lib[0xb0] = vector_lib[0xb0a]
 	vector_lib[0xb1] = {0,0,7,0,7,7,0,7,0,0} -- Box
 	vector_lib[0xb7] = {0,1,1,1,1,2,6,2,6,1,7,1,7,3,6,3,6,5,7,5,7,7,6,7,6,6,1,6,1,7,0,7,0,1} -- Rivet
 	vector_lib[0xdd] = {0,0,7,0,BR,BR,4,0,4,4,BR,BR,1,4,7,4,BR,BR,2,9,1,6,7,6,7,9,BR,BR,5,6,5,9,BR,BR,7,11,2,11,3,14,BR,BR,3,16,7,16,7,18,6,19,5,18,5,16,BR,BR,7,22,5,21,BR,BR,3,21,3,21} -- Help (big H)
@@ -116,7 +115,6 @@ function vectorkong.startplugin()
 	vector_lib["hammer"] = {5,0,7,0,8,1,8,8,7,9,5,9,4,8,4,1,5,0,BR,BR,4,4,0,4,0,5,4,5,BR,BR,8,4,9,4,9,5,8,5}
 	vector_lib["barrel"] = {3,0,12,0,15,2,15,7,12,9,3,9,0,7,0,7,0,2,3,0,BR,BR,1,2,1,7,BR,BR,14,2,14,7,BR,BR,2,3,13,3,BR,BR,2,6,13,6}
 	vector_lib["flames"] = {0,4,2,2,3,3,8,0,4,5,5,6,9,4,5,8,4,7,2,10,2,11,4,12,9,10,4,14,0,12}
-	vector_lib["simple"] = {0,0,0,8,BR,BR,6,0,6,8} -- Simple Block for Title Screen
 
 	function initialize()
 		mame_version = tonumber(emu.app_version())
@@ -138,13 +136,14 @@ function vectorkong.startplugin()
 			vector_color = WHITE
 			game_mode = read(MODE)
 
-			--cls()
+			cls()
 
 			-- skip the intro scene and stay on girders stage
 			if game_mode == 0x07 then write(MODE, 0x08) end
-			if game_mode == 0x08 and last_mode == 0x16 then debug_stay_on_girders() end
+			--if game_mode == 0x08 and last_mode == 0x16 then debug_stay_on_girders() end
 
 			-- handle stage backgrounds
+			if game_mode == 0x06 then draw_title_screen() end
 			if read(VRAM_BL, 0xf0) then draw_girder_stage() end
 			if read(VRAM_BL, 0xb0) then draw_rivet_stage() end
 
@@ -153,11 +152,16 @@ function vectorkong.startplugin()
 			--debug_limits(1000)
 			debug_vector_count()
 			last_mode = game_mode
-
 		end
 	end
 
+	function draw_title_screen()
+		-- use simple block on title screen
+		vector_lib[0xb0] = vector_lib[0xb0a]
+	end
+
 	function draw_girder_stage()
+		enable_zigzags = true
 		-- 1st girder
 		draw_girder(  1,   0,   1, 111, "R")  -- flat section
 		draw_girder(  1, 111,   8, 223, "L")  -- sloped section
@@ -209,7 +213,41 @@ function vectorkong.startplugin()
 	end
 
 	function draw_rivet_stage()
-		-- we'll need ladders on this stage too
+		enable_zigzags = false
+		-- more complex block for this stage
+		vector_lib[0xb0] = vector_lib[0xb0b]
+
+		-- 1st floor
+		draw_girder(  1,   0,   1, 223)
+		draw_ladder( 8, 8,  33) -- left ladder
+		draw_ladder( 8, 104,  33) -- middle ladder
+		draw_ladder( 8, 208,  33) -- right ladder
+
+		-- 2nd floor
+		draw_girder(  41,   8,   41, 216)
+		draw_ladder( 48, 16,  33) -- ladder 1
+		draw_ladder( 48, 72,  33) -- ladder 2
+		draw_ladder( 48, 144,  33) -- ladder 3
+		draw_ladder( 48, 200,  33) -- ladder 4
+
+		-- 3rd floor
+		draw_girder(  81,   16,   81, 208)
+		draw_ladder( 88, 24,  33) -- left ladder
+		draw_ladder( 88, 104,  33) -- middle ladder
+		draw_ladder( 88, 192,  33) -- right ladder
+
+		-- 4th floor
+		draw_girder(  121,   24,   121, 200)
+		draw_ladder( 128, 32,  33) -- ladder 1
+		draw_ladder( 128, 64,  33) -- ladder 2
+		draw_ladder( 128, 152,  33) -- ladder 3
+		draw_ladder( 128, 184,  33) -- ladder 4
+
+		-- 5th floor
+		draw_girder(  161,   32,   161, 192)
+
+		-- Pauline's floor
+		draw_girder(  201,   56,   201, 168)
 	end
 
 	function vector(y1, x1, y2, x2)
