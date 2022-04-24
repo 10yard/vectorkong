@@ -100,14 +100,14 @@ function vectorkong.startplugin()
 	vector_lib[0x8b] = vector_lib[0x1d] --
 	vector_lib[0x9f] = {2,0,0,2,0,13,2,15,5,15,7,13,7,2,5,0,2,0,BR,BR,5,3,5,7,BR,BR,5,5,2,5,BR,BR,2,8,5,8,4,10,5,12,2,12} -- TM
 	vector_lib[0xb0a] = {0,0,0,8,BR,BR,6,0,6,8} -- Simple Block for Title Screen
-	vector_lib[0xb0b] = {4,2,4,3,3,3} -- Rivet block
+	vector_lib[0xb0b] = {4,2,3,3,BR,BR,4,3,3,2} -- Rivet block
 	vector_lib[0xb0] = vector_lib[0xb0a]
 	vector_lib[0xb1] = {0,0,7,0,7,7,0,7,0,0} -- Box
-	vector_lib[0xb7] = {0,1,1,1,1,2,6,2,6,1,7,1,7,3,6,3,6,5,7,5,7,7,6,7,6,6,1,6,1,7,0,7,0,1} -- Rivet
+	vector_lib[0xb7] = {0,0,1,0,1,1,6,1,6,0,7,0,7,2,6,2,6,4,7,4,7,6,6,6,6,5,1,5,1,6,0,6,0,0} -- Rivet
 	vector_lib[0xdd] = {0,0,7,0,BR,BR,4,0,4,4,BR,BR,1,4,7,4,BR,BR,2,9,1,6,7,6,7,9,BR,BR,5,6,5,9,BR,BR,7,11,2,11,3,14,BR,BR,3,16,7,16,7,18,6,19,5,18,5,16,BR,BR,7,22,5,21,BR,BR,3,21,3,21} -- Help (big H)
 	vector_lib[0xed] = {7,0,5,0,BR,BR,6,0,6,4,BR,BR,7,4,4,4,BR,BR,7,9,7,6,4,6,3,9,BR,BR,5,6,5,9,BR,BR,7,11,3,11,2,14,BR,BR,1,16,7,16,7,19,3,19,3,16,BR,BR,7,22,2,21,BR,BR,0,20,0,21} -- Help (little H)
 	vector_lib[0xfb] = {5,1,6,2,6,5,5,6,4,6,2,3,BR,BR,0,3,0,3} -- question mark
-	vector_lib[0xfd] = {-1,0,7,0} -- vertical line
+	vector_lib[0xfd] = {-1,0,8,0,BR,BR,-1,-1,8,-1} -- vertical line
 	vector_lib[0xfe] = {0,0,7,0,7,7,0,7,0,0} -- cross
 	vector_lib[0xff] = {5,2,7,2,7,4,5,4,5,2,BR,BR,5,3,2,3,0,1,BR,BR,2,3,0,5,BR,BR,4,0,3,1,3,5,4,6} -- jumpman / stick man
 	-- non character objects:
@@ -214,7 +214,7 @@ function vectorkong.startplugin()
 
 	function draw_rivet_stage()
 		enable_zigzags = false
-		-- more complex block for this stage
+		-- alternative block for this stage
 		vector_lib[0xb0] = vector_lib[0xb0b]
 
 		-- 1st floor
@@ -224,27 +224,35 @@ function vectorkong.startplugin()
 		draw_ladder( 8, 208,  33) -- right ladder
 
 		-- 2nd floor
-		draw_girder(  41,   8,   41, 216)
+		draw_girder(  41,   8,   41, 56)
+		draw_girder(  41,   64,   41, 160)
+		draw_girder(  41,   168,   41, 216)
 		draw_ladder( 48, 16,  33) -- ladder 1
 		draw_ladder( 48, 72,  33) -- ladder 2
 		draw_ladder( 48, 144,  33) -- ladder 3
 		draw_ladder( 48, 200,  33) -- ladder 4
 
 		-- 3rd floor
-		draw_girder(  81,   16,   81, 208)
+		draw_girder(  81,   16,   81, 56)
+		draw_girder(  81,   64,   81, 160)
+		draw_girder(  81,   168,   81, 208)
 		draw_ladder( 88, 24,  33) -- left ladder
 		draw_ladder( 88, 104,  33) -- middle ladder
 		draw_ladder( 88, 192,  33) -- right ladder
 
 		-- 4th floor
-		draw_girder(  121,   24,   121, 200)
+		draw_girder(  121,   24,   121, 56)
+		draw_girder(  121,   64,   121, 160)
+		draw_girder(  121,   168,   121, 200)
 		draw_ladder( 128, 32,  33) -- ladder 1
 		draw_ladder( 128, 64,  33) -- ladder 2
 		draw_ladder( 128, 152,  33) -- ladder 3
 		draw_ladder( 128, 184,  33) -- ladder 4
 
 		-- 5th floor
-		draw_girder(  161,   32,   161, 192)
+		draw_girder(  161,   32,   161, 56)
+		draw_girder(  161,   64,   161, 160)
+		draw_girder(  161,  168,   161, 192)
 
 		-- Pauline's floor
 		draw_girder(  201,   56,   201, 168)
