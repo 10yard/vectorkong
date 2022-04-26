@@ -136,7 +136,7 @@ function vectorkong.startplugin()
 			vector_color = WHITE
 			game_mode = read(MODE)
 
-			--cls()
+			cls()
 
 			-- skip the intro scene and stay on girders stage
 			if game_mode == 0x07 then write(MODE, 0x08) end
@@ -148,6 +148,7 @@ function vectorkong.startplugin()
 			if read(VRAM_BL, 0xb0) then draw_rivet_stage() end
 
 			draw_vector_characters()
+			draw_jumpman()
 
 			--debug_limits(1000)
 			debug_vector_count()
@@ -378,6 +379,28 @@ function vectorkong.startplugin()
 	function character_colouring(character)
 		-- optional vector character colouring
 		if character == 0xb7 then return YELLOW end  -- Yellow Rivets
+	end
+
+	-- Sprites
+	----------
+	function draw_jumpman()
+		local _y, _x = 255 - read(0x6205), read(0x6203) - 15
+		local _sprite = read(0x694d)
+		circle(_y,_x,4)
+		circle(_y+6,_x,2)
+		--print(_sprite)
+	end
+
+	function draw_barrels()
+	end
+
+	function draw_fireballs()
+	end
+
+	function draw_pauline()
+	end
+
+	function draw_kong()
 	end
 
 	-- General functions
