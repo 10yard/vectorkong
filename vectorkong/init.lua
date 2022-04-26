@@ -19,11 +19,12 @@ function vectorkong.startplugin()
 	local mame_version
 	local vector_count, vector_color
 	local game_mode, last_mode, enable_zigzags
+	local barrel_state = {}
 
 	-- Constants
 	local MODE, STAGE, LEVEL = 0x600a, 0x6227, 0x6229
 	local VRAM_TR, VRAM_BL = 0x7440, 0x77bf  -- top-right and bottom-left corner bytes
-    local WHITE, YELLOW, ORANGE, RED = 0xffffffff, 0xfff0f050, 0xfff4ba15, 0xfff00000
+    local WHITE, YELLOW, ORANGE, RED, BLUE, BROWN = 0xffffffff, 0xfff0f050, 0xfff4ba15, 0xfff00000, 0xff0000f0, 0xffee7511
 
 	-- Vector character library
 	local BR = 0xffff  -- break in a vector chain
@@ -115,6 +116,12 @@ function vectorkong.startplugin()
 	vector_lib["hammer"] = {5,0,7,0,8,1,8,8,7,9,5,9,4,8,4,1,5,0,BR,BR,4,4,0,4,0,5,4,5,BR,BR,8,4,9,4,9,5,8,5}
 	vector_lib["barrel"] = {3,0,12,0,15,2,15,7,12,9,3,9,0,7,0,7,0,2,3,0,BR,BR,1,2,1,7,BR,BR,14,2,14,7,BR,BR,2,3,13,3,BR,BR,2,6,13,6}
 	vector_lib["flames"] = {0,4,2,2,3,3,8,0,4,5,5,6,9,4,5,8,4,7,2,10,2,11,4,12,9,10,4,14,0,12}
+	vector_lib["roll-1"] = {3,0,6,0,8,2,8,3,9,4,9,7,8,8,8,9,6,11,3,11,1,9,1,8,0,7,0,4,1,3,1,2,3,0,BR,BR,2,3,3,4,BR,BR,3,3,2,4,BR,BR,6,5,3,8}
+	vector_lib["roll-2"] = {3,0,6,0,8,2,8,3,9,4,9,7,8,8,8,9,6,11,3,11,1,9,1,8,0,7,0,4,1,3,1,2,3,0,BR,BR,2,7,3,8,BR,BR,3,7,2,8,BR,BR,3,3,6,6}
+	vector_lib["roll-3"] = {3,0,6,0,8,2,8,3,9,4,9,7,8,8,8,9,6,11,3,11,1,9,1,8,0,7,0,4,1,3,1,2,3,0,BR,BR,6,7,7,8,BR,BR,7,7,6,8,BR,BR,6,3,3,6}
+	vector_lib["roll-4"] = {3,0,6,0,8,2,8,3,9,4,9,7,8,8,8,9,6,11,3,11,1,9,1,8,0,7,0,4,1,3,1,2,3,0,BR,BR,6,3,7,4,BR,BR,7,3,6,4,BR,BR,3,5,6,8}
+	vector_lib["down-1"] = {2,0,7,0,9,3,9,12,7,15,2,15,0,12,0,3,2,0,BR,BR,1,1,8,1,BR,BR,1,14,8,14,BR,BR,2,3,2,12,BR,BR,7,3,7,12}
+	vector_lib["down-2"] = {2,0,7,0,9,3,9,12,7,15,2,15,0,12,0,3,2,0,BR,BR,1,1,8,1,BR,BR,1,14,8,14,BR,BR,3,3,3,12,BR,BR,6,3,6,12}
 
 	function initialize()
 		mame_version = tonumber(emu.app_version())
@@ -140,7 +147,7 @@ function vectorkong.startplugin()
 
 			-- skip the intro scene and stay on girders stage
 			if game_mode == 0x07 then write(MODE, 0x08) end
-			--if game_mode == 0x08 and last_mode == 0x16 then debug_stay_on_girders() end
+			if game_mode == 0x08 and last_mode == 0x16 then debug_stay_on_girders() end
 
 			-- handle stage backgrounds
 			if game_mode == 0x06 then draw_title_screen() end
@@ -162,6 +169,9 @@ function vectorkong.startplugin()
 	end
 
 	function draw_girder_stage()
+		draw_barrels()
+		draw_fireballs()
+
 		enable_zigzags = true
 		-- 1st girder
 		draw_girder(  1,   0,   1, 111, "R")  -- flat section
@@ -214,6 +224,8 @@ function vectorkong.startplugin()
 	end
 
 	function draw_rivet_stage()
+		draw_fireballs()
+
 		enable_zigzags = false
 		-- alternative block for this stage
 		vector_lib[0xb0] = vector_lib[0xb0b]
@@ -286,9 +298,9 @@ function vectorkong.startplugin()
 	end
 
 	function circle(y, x, r)
-		-- draw a 20 segment circle at given position with radius
+		-- draw a 10 segment circle at given position with radius
 		local _save_segy, _save_segx
-		for _segment=0, 360, 18 do
+		for _segment=0, 360, 36 do
 			local _angle = _segment * (math.pi / 180)
 			local _segy, _segx = y + r * math.sin(_angle), x + r * math.cos(_angle)
 			if _save_segy then vector(_save_segy, _save_segx, _segy, _segx) end
@@ -386,15 +398,53 @@ function vectorkong.startplugin()
 	function draw_jumpman()
 		local _y, _x = 255 - read(0x6205), read(0x6203) - 15
 		local _sprite = read(0x694d)
-		circle(_y,_x,4)
-		circle(_y+6,_x,2)
-		--print(_sprite)
+		vector_color = BLUE
+		circle(_y-2,_x,4)
+		circle(_y+4,_x,2)
+
+		vector_color = WHITE
 	end
 
 	function draw_barrels()
+		local _y, _x, _crazy
+		_sprite_offset = 0x6982
+		for _, _addr in ipairs{0x6700, 0x6720, 0x6740, 0x6760, 0x6780, 0x67a0, 0x67c0, 0x67e0} do
+			if not read(_addr, 0) and read(0x6200,1) then  -- barrel is active and Jumpman is alive
+				_y, _x = 252 - read(_addr+5), read(_addr+3) - 20
+
+				_color = read(_sprite_offset)
+				_sprite_offset = _sprite_offset + 4
+
+				_crazy = read(_addr+1, 1)
+				if not mac.paused then
+					print(_color)
+				end
+				if _color == 0 or _color == 11 or _color == 12 then vector_color = BLUE else vector_color = BROWN end
+				if to_bits(read(_addr+2))[1] == 1 or _crazy then  -- rolling down
+					draw_object("down-"..tostring(read(_addr+0xf) %2+1), _y, _x-2)
+				else
+					if barrel_state[_addr] then _state = barrel_state[_addr] else _state = 0 end
+					if scr:frame_number() % 10 == 0 then
+						if read(_addr+2, 2) then _state = _state -1 else _state = _state + 1 end  -- rolling left or right?
+						barrel_state[_addr] = _state
+					end
+					draw_object("roll-"..tostring(_state % 4 + 1), _y, _x)
+				end
+			end
+		end
+		vector_color = WHITE
 	end
 
 	function draw_fireballs()
+		local _y, _x
+		vector_color = RED
+		for _, _addr in ipairs{0x6400, 0x6420, 0x6440, 0x6460, 0x6480} do
+			if read(_addr, 1) then
+				_y, _x = 255 - read(_addr+5), read(_addr+3) - 15
+				circle(_y, _x, 5)
+			end
+		end
+		vector_color = WHITE
 	end
 
 	function draw_pauline()
@@ -414,6 +464,18 @@ function vectorkong.startplugin()
 	function write(address, value)
 		mem:write_u8(address, value)
 	end
+
+	function to_bits(num)
+		--return a table of bits, least significant first
+		local _t={}
+		while num>0 do
+			rest=math.fmod(num,2)
+			_t[#_t+1]=rest
+			num=(num-rest)/2
+		end
+		return _t
+	end
+
 
 	-- Debugging functions
 	----------------------
