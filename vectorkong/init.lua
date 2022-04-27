@@ -401,29 +401,25 @@ function vectorkong.startplugin()
 		vector_color = BLUE
 		circle(_y-2,_x,4)
 		circle(_y+4,_x,2)
-
 		vector_color = WHITE
 	end
 
 	function draw_barrels()
-		local _y, _x, _crazy
-		_sprite_offset = 0x6982
+		local _y, _x, _crazy, _blue, _down
 		for _, _addr in ipairs{0x6700, 0x6720, 0x6740, 0x6760, 0x6780, 0x67a0, 0x67c0, 0x67e0} do
 			if not read(_addr, 0) and read(0x6200,1) then  -- barrel is active and Jumpman is alive
 				_y, _x = 252 - read(_addr+5), read(_addr+3) - 20
 
-				_color = read(_sprite_offset)
-				_sprite_offset = _sprite_offset + 4
-
 				_crazy = read(_addr+1, 1)
-				if not mac.paused then
-					print(_color)
-				end
-				if _color == 0 or _color == 11 or _color == 12 then vector_color = BLUE else vector_color = BROWN end
-				if to_bits(read(_addr+2))[1] == 1 or _crazy then  -- rolling down
-					draw_object("down-"..tostring(read(_addr+0xf) %2+1), _y, _x-2)
+				_blue = read(_addr+0x15,1)
+				_down = to_bits(read(_addr+2))[1] == 1
+
+				if _blue then vector_color = BLUE else vector_color = BROWN end
+				if _down or _crazy then
+					_state = read(_addr+0xf)
+					draw_object("down-"..tostring(_state % 2 + 1), _y, _x-2)
 				else
-					if barrel_state[_addr] then _state = barrel_state[_addr] else _state = 0 end
+					_state = barrel_state[_addr] or 0
 					if scr:frame_number() % 10 == 0 then
 						if read(_addr+2, 2) then _state = _state -1 else _state = _state + 1 end  -- rolling left or right?
 						barrel_state[_addr] = _state
