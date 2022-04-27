@@ -24,7 +24,8 @@ function vectorkong.startplugin()
 	-- Constants
 	local MODE, STAGE, LEVEL = 0x600a, 0x6227, 0x6229
 	local VRAM_TR, VRAM_BL = 0x7440, 0x77bf  -- top-right and bottom-left corner bytes
-    local WHITE, YELLOW, ORANGE, RED, BLUE, BROWN = 0xffffffff, 0xfff0f050, 0xfff4ba15, 0xfff00000, 0xff0000f0, 0xffee7511
+    local BLACK, WHITE, YELLOW, ORANGE, RED = 0xff000000, 0xffffffff, 0xfff0f050, 0xfff4ba15, 0xfff00000
+	local BLUE, BROWN, MAGENTA, PINK = 0xff0000f0, 0xffee7511, 0xfff057e8, 0xffffd1dc
 
 	-- Vector character library
 	local BR = 0xffff  -- break in a vector chain
@@ -106,7 +107,7 @@ function vectorkong.startplugin()
 	vector_lib[0xb1] = {0,0,7,0,7,7,0,7,0,0} -- Box
 	vector_lib[0xb7] = {0,0,1,0,1,1,6,1,6,0,7,0,7,6,6,6,6,5,1,5,1,6,0,6,0,0} -- Rivet
 	vector_lib[0xdd] = {0,0,7,0,BR,BR,4,0,4,4,BR,BR,1,4,7,4,BR,BR,2,9,1,6,7,6,7,9,BR,BR,5,6,5,9,BR,BR,7,11,2,11,3,14,BR,BR,3,16,7,16,7,18,6,19,5,18,5,16,BR,BR,7,22,5,21,BR,BR,3,21,3,21} -- Help (big H)
-	vector_lib[0xed] = {7,0,5,0,BR,BR,6,0,6,4,BR,BR,7,4,4,4,BR,BR,7,9,7,6,4,6,3,9,BR,BR,5,6,5,9,BR,BR,7,11,3,11,2,14,BR,BR,1,16,7,16,7,19,3,19,3,16,BR,BR,7,22,2,21,BR,BR,0,20,0,21} -- Help (little H)
+	vector_lib[0xed] = {7,1,5,1,BR,BR,6,1,6,5,BR,BR,7,5,4,5,BR,BR,7,10,7,7,4,7,3,10,BR,BR,5,7,5,10,BR,BR,7,12,3,12,2,15,BR,BR,1,17,7,17,7,20,3,20,3,17,BR,BR,7,23,2,22,BR,BR,0,21,0,22} -- Help (little H)
 	vector_lib[0xfb] = {5,1,6,2,6,5,5,6,4,6,2,3,BR,BR,0,3,0,3} -- question mark
 	vector_lib[0xfd] = {-1,0,8,0,BR,BR,-1,-1,8,-1} -- vertical line
 	vector_lib[0xfe] = {0,0,7,0,7,7,0,7,0,0} -- cross
@@ -122,6 +123,12 @@ function vectorkong.startplugin()
 	vector_lib["roll-4"] = {3,0,6,0,8,2,8,3,9,4,9,7,8,8,8,9,6,11,3,11,1,9,1,8,0,7,0,4,1,3,1,2,3,0,BR,BR,6,3,7,4,BR,BR,7,3,6,4,BR,BR,3,5,6,8}
 	vector_lib["down-1"] = {2,0,7,0,9,3,9,12,7,15,2,15,0,12,0,3,2,0,BR,BR,1,1,8,1,BR,BR,1,14,8,14,BR,BR,2,3,2,12,BR,BR,7,3,7,12}
 	vector_lib["down-2"] = {2,0,7,0,9,3,9,12,7,15,2,15,0,12,0,3,2,0,BR,BR,1,1,8,1,BR,BR,1,14,8,14,BR,BR,3,3,3,12,BR,BR,6,3,6,12}
+	vector_lib["paul-1"] = {14,11,1,12,4,0,10,7,15,6,15,7,13,9,14,11}
+	vector_lib["paul-2"] = {20,14,21,13,21,8,15,1,15,6,15,7,20,10,20,14,18,14,16,12,16,10,14,10,BR,BR,19,12,19,13,BR,BR,2,5,0,6,1,2,3,3,2,5,BR,BR,13,6,12,2,11,2,11,7,BR,BR,10,12,9,15,10,15,12,11,BR,BR,1,12,0,13,0,9,2,9,1,12}
+	vector_lib["100"] = {5,0,6,1,0,1,BR,BR,0,0,0,2,BR,BR,0,4,0,8,6,8,6,4,0,4,BR,BR,0,10,0,14,6,14,6,10,0,10}
+	vector_lib["300"] = {0,0,0,4,2,4,3,1,6,4,6,0,BR,BR,0,6,0,9,6,9,6,6,0,6,BR,BR,0,11,0,14,6,14,6,11,0,11}
+	vector_lib["500"] = {1,0,0,1,0,3,1,4,3,4,4,0,6,0,6,4,BR,BR,0,6,0,9,6,9,6,6,0,6,BR,BR,0,11,0,14,6,14,6,11,0,11}
+	vector_lib["800"] = {1,0,2,0,4,4,5,4,6,3,6,1,5,0,4,0,2,4,1,4,0,3,0,1,1,0,BR,BR,0,6,0,9,6,9,6,6,0,6,BR,BR,0,11,0,14,6,14,6,11,0,11}
 
 	function initialize()
 		mame_version = tonumber(emu.app_version())
@@ -153,12 +160,18 @@ function vectorkong.startplugin()
 			if game_mode == 0x06 then draw_title_screen() end
 			if read(VRAM_BL, 0xf0) then draw_girder_stage() end
 			if read(VRAM_BL, 0xb0) then draw_rivet_stage() end
+			if game_mode == 0x10 then draw_gameover_screen() end
 
 			draw_vector_characters()
 			draw_jumpman()
 
+			draw_object("100", 220, 10)
+			draw_object("300", 220, 30)
+			draw_object("500", 220, 50)
+			draw_object("800", 220, 70)
+
 			--debug_limits(1000)
-			debug_vector_count()
+			--debug_vector_count()
 			last_mode = game_mode
 		end
 	end
@@ -168,11 +181,13 @@ function vectorkong.startplugin()
 		vector_lib[0xb0] = vector_lib[0xb0a]
 	end
 
-	function draw_girder_stage()
-		draw_barrels()
-		draw_fireballs()
+	function draw_gameover_screen()
+		-- emphasise the game over message
+		scr:draw_box(64, 64, 88, 160, BLACK, BLACK)
+	end
 
-		enable_zigzags = true
+	function draw_girder_stage()
+		enable_zigzags = false
 		-- 1st girder
 		draw_girder(  1,   0,   1, 111, "R")  -- flat section
 		draw_girder(  1, 111,   8, 223, "L")  -- sloped section
@@ -221,11 +236,14 @@ function vectorkong.startplugin()
 
 		-- Pauline's girder
 		draw_girder(193,  88, 193, 136, "L")
+
+		-- Sprites
+		draw_pauline()
+		draw_barrels()
+		draw_fireballs()
 	end
 
 	function draw_rivet_stage()
-		draw_fireballs()
-
 		enable_zigzags = false
 		-- alternative block for this stage
 		vector_lib[0xb0] = vector_lib[0xb0b]
@@ -269,11 +287,14 @@ function vectorkong.startplugin()
 
 		-- Pauline's floor
 		draw_girder(  201,   56,   201, 168)
+
+		-- Sprites
+		draw_fireballs()
 	end
 
 	function vector(y1, x1, y2, x2)
 		-- draw a single vector
-		scr:draw_line(y1+wobble(), x1+wobble(), y2+wobble(), x2+wobble(), vector_color)
+		scr:draw_line(y1, x1, y2, x2, vector_color)
 		--scr:draw_line(y1+wobble(), x1+wobble(), y2+wobble(), x2+wobble(), intensity())
 		vector_count = vector_count + 1
 	end
@@ -297,17 +318,6 @@ function vectorkong.startplugin()
 		polyline({y,x,y+h,x,y+h,x+w,y,x+w,y,x})
 	end
 
-	function circle(y, x, r)
-		-- draw a 10 segment circle at given position with radius
-		local _save_segy, _save_segx
-		for _segment=0, 360, 36 do
-			local _angle = _segment * (math.pi / 180)
-			local _segy, _segx = y + r * math.sin(_angle), x + r * math.cos(_angle)
-			if _save_segy then vector(_save_segy, _save_segx, _segy, _segx) end
-			_save_segy, _save_segx = _segy, _segx
-		end
-	end
-
 	function intensity()
 		-- we can vary the brightness of the vectors
 		--if not mac.paused then return ({0xddffffff, 0xeeffffff, 0xffffffff})[math.random(3)] else return 0xffffffff end
@@ -321,7 +331,7 @@ function vectorkong.startplugin()
 
 	function cls()
 		-- clear the screen
-		scr:draw_box(0, 0, 256, 224, 0xff000000, 0xff000000)
+		scr:draw_box(0, 0, 256, 224, BLACK, BLACK)
 	end
 
 	-- vector objects
@@ -345,14 +355,10 @@ function vectorkong.startplugin()
 		if not open or open ~= "L" then	polyline({y1,x1,y1+7,x1}) end
 		if not open or open ~= "R" then polyline({y2,x2,y2+7,x2}) end
 		if enable_zigzags then  -- Fill the girders with optional zig zags
-			local _zig = 4  -- zigzag width 4 or 8 works well
 			local _cnt = 0
-			for _x=x1, x2 - 1, _zig*2 do
+			for _x=x1, x2 - 1, 8 do
 				_y = y1 + (((y2 - y1) / (x2 - x1)) * (_x - x1))
-				if _cnt % 2 == 0 then polyline({3,_zig,4,_zig*2,3,_zig*3}, _y, _x) end ; _cnt = _cnt + 1
-				--if _cnt % 2 == 0 then polyline({2,_zig,5,_zig*2,2,_zig*3}, _y, _x) end ; _cnt = _cnt + 1
-				--polyline({2,0,5,_zig,2,_zig*2}, _y, _x)
-				--polyline({2,0,5,_zig}, _y, _x)
+				if _cnt % 2 == 0 then polyline({3,4,4,8,3,12}, _y, _x) end ; _cnt = _cnt + 1
 			end
 		end
 	end
@@ -360,15 +366,9 @@ function vectorkong.startplugin()
 	function draw_oilcan_and_flames(y, x)
 		draw_object("oilcan",  y, x)
 		if not read(0x6a29, 0x70) then  -- is the oilcan on fire?
-			local _data = {}
-			local _flames = vector_lib["flames"]
-			for _i=1, #_flames, 2 do
-				if _i > 2 and _i < #_flames -2 then _adjust = math.random(-2,2) else _adjust = 0 end
-				table.insert(_data, _flames[_i] + _adjust)
-				table.insert(_data, _flames[_i+1])
-			end
 			vector_color = ({YELLOW, ORANGE, RED})[math.random(3)]
-			polyline(_data, y+16, x)
+			polyline(vector_lib["flames"], y+16+math.random(1,3), x)
+			polyline(vector_lib["flames"], y+16, x)
 			vector_color = WHITE
 		end
 	end
@@ -397,28 +397,26 @@ function vectorkong.startplugin()
 	----------
 	function draw_jumpman()
 		local _y, _x = 255 - read(0x6205), read(0x6203) - 15
-		local _sprite = read(0x694d)
+		--local _sprite = read(0x694d)
 		vector_color = BLUE
-		circle(_y-2,_x,4)
-		circle(_y+4,_x,2)
+		box(_y-7,_x-6,16,10)
 		vector_color = WHITE
 	end
 
 	function draw_barrels()
-		local _y, _x, _crazy, _blue, _down
-		for _, _addr in ipairs{0x6700, 0x6720, 0x6740, 0x6760, 0x6780, 0x67a0, 0x67c0, 0x67e0} do
+		local _y, _x, _crazy, _blue, _down, _state
+		for _, _addr in ipairs{0x6700, 0x6720, 0x6740, 0x6760, 0x6780, 0x67a0, 0x67c0, 0x67e0, 0x6800, 0x6820} do
 			if not read(_addr, 0) and read(0x6200,1) then  -- barrel is active and Jumpman is alive
-				_y, _x = 252 - read(_addr+5), read(_addr+3) - 20
-
+				_y, _x = 251 - read(_addr+5), read(_addr+3) - 20
 				_crazy = read(_addr+1, 1)
 				_blue = read(_addr+0x15,1)
 				_down = to_bits(read(_addr+2))[1] == 1
 
 				if _blue then vector_color = BLUE else vector_color = BROWN end
-				if _down or _crazy then
+				if _down or _crazy then  -- barrel is falling down
 					_state = read(_addr+0xf)
 					draw_object("down-"..tostring(_state % 2 + 1), _y, _x-2)
-				else
+				else  -- barrel is rolling
 					_state = barrel_state[_addr] or 0
 					if scr:frame_number() % 10 == 0 then
 						if read(_addr+2, 2) then _state = _state -1 else _state = _state + 1 end  -- rolling left or right?
@@ -437,13 +435,19 @@ function vectorkong.startplugin()
 		for _, _addr in ipairs{0x6400, 0x6420, 0x6440, 0x6460, 0x6480} do
 			if read(_addr, 1) then
 				_y, _x = 255 - read(_addr+5), read(_addr+3) - 15
-				circle(_y, _x, 5)
+				box(_y-6, _x-6, 12, 12)
 			end
 		end
 		vector_color = WHITE
 	end
 
 	function draw_pauline()
+		local _y, _x = 235 - read(0x6903), read(0x6905) + 72
+		vector_color = MAGENTA
+		draw_object("paul-1", _y, _x)
+		vector_color = PINK
+		draw_object("paul-2", _y, _x)
+		vector_color = WHITE
 	end
 
 	function draw_kong()
@@ -481,13 +485,11 @@ function vectorkong.startplugin()
 
 	function debug_limits(limit)
 		local _rnd, _ins = math.random, table.insert
-		local _cycle = math.floor(scr:frame_number() % 720 / 180)  -- cycle through the 4 tests, each 3 seconds long
+		local _cycle = math.floor(scr:frame_number() % 540 / 180)  -- cycle through the 3 tests, each 3 seconds long
 		if _cycle == 0 then
 			for _=1, limit do vector(256, 224, _rnd(248), _rnd(224)) end  -- single vectors
 		elseif _cycle == 1 then
 			_d={}; for _=0,limit do _ins(_d,_rnd(256)); _ins(_d,_rnd(224)) end; polyline(_d)  -- polylines
-		elseif _cycle == 2 then
-			for _=1, limit/20 do circle(_rnd(200)+24, _rnd(176)+24, _rnd(16)+8) end  -- circles
 		else
 			for _=1, limit / 4 do box(_rnd(216), _rnd(200), _rnd(32)+8, _rnd(24)+8) end  -- boxes
 		end
