@@ -25,7 +25,7 @@ function vectorkong.startplugin()
 	local MODE, STAGE, LEVEL = 0x600a, 0x6227, 0x6229
 	local VRAM_TR, VRAM_BL = 0x7440, 0x77bf  -- top-right and bottom-left corner bytes
     local BLACK, WHITE, YELLOW, ORANGE, RED = 0xff000000, 0xffffffff, 0xfff0f050, 0xfff4ba15, 0xfff00000
-	local BLUE, BROWN, MAGENTA, PINK = 0xff0000f0, 0xffee7511, 0xfff057e8, 0xffffd1dc
+	local BLUE, BROWN, MAGENTA, PINK, LBROWN = 0xff0000f0, 0xffee7511, 0xfff057e8, 0xffffd1dc, 0xfff5bb9f
 
 	-- Vector character library
 	local BR = 0xffff  -- break in a vector chain
@@ -121,6 +121,10 @@ function vectorkong.startplugin()
 	vector_lib["roll-2"] = {3,0,6,0,8,2,8,3,9,4,9,7,8,8,8,9,6,11,3,11,1,9,1,8,0,7,0,4,1,3,1,2,3,0,BR,BR,2,7,3,8,BR,BR,3,7,2,8,BR,BR,3,3,6,6}
 	vector_lib["roll-3"] = {3,0,6,0,8,2,8,3,9,4,9,7,8,8,8,9,6,11,3,11,1,9,1,8,0,7,0,4,1,3,1,2,3,0,BR,BR,6,7,7,8,BR,BR,7,7,6,8,BR,BR,6,3,3,6}
 	vector_lib["roll-4"] = {3,0,6,0,8,2,8,3,9,4,9,7,8,8,8,9,6,11,3,11,1,9,1,8,0,7,0,4,1,3,1,2,3,0,BR,BR,6,3,7,4,BR,BR,7,3,6,4,BR,BR,3,5,6,8}
+	vector_lib["blue-1"] = {3,0,6,0,8,2,8,3,9,4,9,7,8,8,8,9,6,11,3,11,1,9,1,8,0,7,0,4,1,3,1,2,3,0,BR,BR,3,3,5,3,6,4,6,7,7,8,6,9,5,8,3,8,2,7,2,4,3,3,BR,BR,5,4,3,6}
+	vector_lib["blue-2"] = {3,0,6,0,8,2,8,3,9,4,9,7,8,8,8,9,6,11,3,11,1,9,1,8,0,7,0,4,1,3,1,2,3,0,BR,BR,5,8,3,8,2,7,2,4,3,3,5,3,6,2,7,3,6,4,6,7,5,8,BR,BR,3,5,5,7}
+	vector_lib["blue-3"] = {3,0,6,0,8,2,8,3,9,4,9,7,8,8,8,9,6,11,3,11,1,9,1,8,0,7,0,4,1,3,1,2,3,0,BR,BR,7,4,7,7,6,8,4,8,3,7,3,4,2,3,3,2,4,3,6,3,7,4,BR,BR,6,5,4,7}
+	vector_lib["blue-4"] = {3,0,6,0,8,2,8,3,9,4,9,7,8,8,8,9,6,11,3,11,1,9,1,8,0,7,0,4,1,3,1,2,3,0,BR,BR,4,3,6,3,7,4,7,7,6,8,4,8,3,9,2,8,3,7,3,4,4,3,BR,BR,6,6,4,4}
 	vector_lib["down-1"] = {2,0,7,0,9,3,9,12,7,15,2,15,0,12,0,3,2,0,BR,BR,1,1,8,1,BR,BR,1,14,8,14,BR,BR,2,3,2,12,BR,BR,7,3,7,12}
 	vector_lib["down-2"] = {2,0,7,0,9,3,9,12,7,15,2,15,0,12,0,3,2,0,BR,BR,1,1,8,1,BR,BR,1,14,8,14,BR,BR,3,3,3,12,BR,BR,6,3,6,12}
 	vector_lib["paul-1"] = {14,11,1,12,4,0,10,7,15,6,15,7,13,9,14,11}
@@ -165,13 +169,8 @@ function vectorkong.startplugin()
 			draw_vector_characters()
 			draw_jumpman()
 
-			draw_object("100", 220, 10)
-			draw_object("300", 220, 30)
-			draw_object("500", 220, 50)
-			draw_object("800", 220, 70)
-
 			--debug_limits(1000)
-			--debug_vector_count()
+			debug_vector_count()
 			last_mode = game_mode
 		end
 	end
@@ -229,13 +228,16 @@ function vectorkong.startplugin()
 		draw_ladder(172,  64,  52)  -- left ladder
 		draw_ladder(172,  80,  52)  -- middle ladder
 		draw_ladder(172, 128,  21)  -- right ladder
+
+		-- Pauline's girder
+		draw_girder(193,  88, 193, 136, "L")
+
+		-- stacked barrels
+		vector_color = BROWN
 		draw_object("barrel", 173, 0)
 		draw_object("barrel", 173, 10)
 		draw_object("barrel", 189, 0)
 		draw_object("barrel", 189, 10)
-
-		-- Pauline's girder
-		draw_girder(193,  88, 193, 136, "L")
 
 		-- Sprites
 		draw_pauline()
@@ -422,7 +424,11 @@ function vectorkong.startplugin()
 						if read(_addr+2, 2) then _state = _state -1 else _state = _state + 1 end  -- rolling left or right?
 						barrel_state[_addr] = _state
 					end
-					draw_object("roll-"..tostring(_state % 4 + 1), _y, _x)
+					if _blue then
+						draw_object("blue-"..tostring(_state % 4 + 1), _y, _x)
+					else
+						draw_object("roll-"..tostring(_state % 4 + 1), _y, _x)
+					end
 				end
 			end
 		end
