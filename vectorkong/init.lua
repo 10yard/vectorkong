@@ -60,15 +60,15 @@ function vectorkong.startplugin()
 			-- handle stage backgrounds
 			if game_mode == 0x06 then draw_title_screen() end
 			if read(VRAM_BL, 0xf0) then draw_girder_stage() end
-			if read(VRAM_BL, 0xb0) then draw_rivet_stage() end
+			--if read(VRAM_BL, 0xb0) then draw_rivet_stage() end
 			if game_mode == 0x10 then draw_gameover_screen() end
+			if game_mode == 0x15 then draw_name_entry_screen() end
 
 			draw_vector_characters()
-			draw_jumpman()
 			draw_points()
 
 			--debug_limits(1000)
-			debug_vector_count()
+			--debug_vector_count()
 			last_mode = game_mode
 		end
 	end
@@ -81,6 +81,18 @@ function vectorkong.startplugin()
 	function draw_gameover_screen()
 		-- emphasise the game over message
 		scr:draw_box(64, 64, 88, 160, BLK, BLK)
+	end
+
+	function draw_name_entry_screen()
+		-- highlight selected character with blue box
+		if game_mode == 0x15 then
+			_index = read(0x6035)
+			_y = math.floor(_index / 10) * -16 + 156
+			_x = _index % 10 * 16 + 36
+			vector_color = BLU
+			box(_y, _x, 16, 16)
+			vector_color = WHT
+		end
 	end
 
 	function draw_girder_stage()
@@ -97,7 +109,6 @@ function vectorkong.startplugin()
 		draw_girder( 41,   0,  29, 207)
 		draw_ladder( 46,  32,  17)  -- left ladder
 		draw_ladder( 42,  96,  25)  -- right ladder
-		draw_object("hammer", 56, 168)
 
 		-- 3rd Girder
 		draw_girder( 62,  16,  74, 223)
@@ -118,7 +129,6 @@ function vectorkong.startplugin()
 		draw_ladder(139,  88,  13)  -- broken ladder bottom
 		draw_ladder(160,  88,   5)  -- broken ladder top
 		draw_ladder(145, 184,  17)  -- right ladder
-		draw_object("hammer", 148,  17)
 
 		-- 6th girder
 		draw_girder(165,   0, 165, 143, "R")  -- flat section
@@ -131,8 +141,10 @@ function vectorkong.startplugin()
 		draw_girder(193,  88, 193, 136, "L")
 
 		draw_stacked_barrels()
+		draw_hammers()
 
 		-- Sprites
+		draw_jumpman()
 		draw_pauline()
 		draw_barrels()
 		draw_fireball()
@@ -184,6 +196,7 @@ function vectorkong.startplugin()
 		draw_girder(  201,   56,   201, 168)
 
 		-- Sprites
+		draw_jumpman()
 		draw_fireball()
 	end
 
@@ -272,8 +285,14 @@ function vectorkong.startplugin()
 		end
 	end
 
+	function draw_hammers()
+		if read(0x6a18, 0x24) and read(0x6680, 1) then draw_object("hammer", 148,  17) end  -- top hammer
+		if read(0x6a1c, 0xbb) and read(0x6690, 1) then draw_object("hammer", 56, 168) end -- bottom hammer
+	end
+
 	function draw_oilcan_and_flames(y, x)
 		draw_object("oilcan",  y, x)
+		print(read(0x6a29))
 		if not read(0x6a29, 0x70) then  -- is the oilcan on fire?
 			vector_color = ({ YEL, ORA, RED})[math.random(3)]
 			polyline(vector_lib["flames"], y+16+math.random(1,3), x)
