@@ -24,15 +24,21 @@ function vectorkong.startplugin()
 
 	-- Constants
 	local MODE, STAGE, LEVEL = 0x600a, 0x6227, 0x6229
-	local VRAM_TR, VRAM_BL = 0x7440, 0x77bf  -- top-right and bottom-left corner bytes
-    local BLK, WHT, YEL, ORA, RED, BLU = 0xff000000, 0xffffffff, 0xfff0f050, 0xfff4ba15, 0xfff00000, 0xff0000f0  -- colors
+	local VRAM_TR, VRAM_BL = 0x7440, 0x77bf  -- top-right and bottom-left bytes of video ram
+	local BLK, WHT, YEL, RED, BLU = 0xff000000, 0xffffffff, 0xfff0f050, 0xfff00000, 0xff0000f0  -- colors
 	local BRN, MAG, PNK, LBR, CYN = 0xffee7511, 0xfff057e8, 0xffffd1dc, 0xfff5bb9f, 0xff14f3ff
 	local BR = 0xffff  -- break in a vector chain
 
 	function initialize()
 		mame_version = tonumber(emu.app_version())
 		if mame_version >= 0.196 then
-			if type(manager.machine) == "userdata" then mac = manager.machine else mac = manager:machine() end
+			if type(manager.machine) == "userdata" then
+				mac = manager.machine
+				bnk = mac.memory
+			else
+				mac = manager:machine()
+				bnk = mac:memory()
+			end
 		else
 			print("ERROR: The vectorkong plugin requires MAME version 0.196 or greater.")
 		end
@@ -41,6 +47,7 @@ function vectorkong.startplugin()
 			cpu = mac.devices[":maincpu"]
 			mem = cpu.spaces["program"]
 		end
+		clear_graphics_banks()
 		vector_lib = load_vector_library()
 	end
 
@@ -51,18 +58,16 @@ function vectorkong.startplugin()
 			vector_color = WHT
 			game_mode = read(MODE)
 
-			cls()
-
 			-- skip the intro scene and stay on girders stage
 			if game_mode == 0x07 then write(MODE, 0x08) end
 			if game_mode == 0x08 and last_mode == 0x16 then debug_stay_on_girders() end
 
 			-- handle stage backgrounds
-			if game_mode == 0x06 then draw_title_screen() end
+			if game_mode == 0x06 then adjust_title_screen() end
 			if read(VRAM_BL, 0xf0) then draw_girder_stage() end
 			--if read(VRAM_BL, 0xb0) then draw_rivet_stage() end
-			if game_mode == 0x10 then draw_gameover_screen() end
-			if game_mode == 0x15 then draw_name_entry_screen() end
+			if game_mode == 0x10 then adjust_gameover_screen() end
+			if game_mode == 0x15 then adjust_name_entry_screen() end
 
 			draw_vector_characters()
 			draw_points()
@@ -73,30 +78,30 @@ function vectorkong.startplugin()
 		end
 	end
 
-	function draw_title_screen()
+	-- Screen specific adjustments
+	------------------------------
+	function adjust_title_screen()
 		-- use simple block on title screen
 		vector_lib[0xb0] = vector_lib[0xb0a]
 	end
 
-	function draw_gameover_screen()
+	function adjust_gameover_screen()
 		-- emphasise the game over message
 		scr:draw_box(64, 64, 88, 160, BLK, BLK)
 	end
 
-	function draw_name_entry_screen()
+	function adjust_name_entry_screen()
 		-- highlight selected character with blue box
-		if game_mode == 0x15 then
-			_index = read(0x6035)
-			_y = math.floor(_index / 10) * -16 + 156
-			_x = _index % 10 * 16 + 36
-			vector_color = BLU
-			box(_y, _x, 16, 16)
-			vector_color = WHT
-		end
+		_index = read(0x6035)
+		_y = math.floor(_index / 10) * -16 + 156
+		_x = _index % 10 * 16 + 36
+		draw_object("select", _y, _x, BLU)
 	end
 
+	-- Draw the various stage backgrounds
+	-------------------------------------
 	function draw_girder_stage()
-		enable_zigzags = false
+		enable_zigzags = true
 		-- 1st girder
 		draw_girder(  1,   0,   1, 111, "R")  -- flat section
 		draw_girder(  1, 111,   8, 223, "L")  -- sloped section
@@ -147,7 +152,8 @@ function vectorkong.startplugin()
 		draw_jumpman()
 		draw_pauline()
 		draw_barrels()
-		draw_fireball()
+		draw_fireballs()
+		draw_loveheart()
 	end
 
 	function draw_rivet_stage()
@@ -197,9 +203,11 @@ function vectorkong.startplugin()
 
 		-- Sprites
 		draw_jumpman()
-		draw_fireball()
+		draw_fireballs()
 	end
 
+	-- Basic vector drawing functions
+	---------------------------------
 	function vector(y1, x1, y2, x2)
 		-- draw a single vector
 		scr:draw_line(y1, x1, y2, x2, vector_color)
@@ -229,13 +237,19 @@ function vectorkong.startplugin()
 		polyline({y,x,y+h,x,y+h,x+w,y,x+w,y,x})
 	end
 
-	function cls()
-		-- clear the screen
-		scr:draw_box(0, 0, 256, 224, BLK, BLK)
+	function draw_vector_characters()
+		-- Output vector characters based on contents of video ram ($7400-77ff)
+		local _addr = VRAM_TR
+		local _char
+		for _x=223, 0, -8 do
+			for _y=255, 0, -8 do
+				_char = mem:read_u8(_addr)
+				draw_object(_char, _y - 6, _x - 6, character_colouring(_char))
+				_addr = _addr + 1
+			end
+		end
 	end
 
-	-- vector objects
-	-----------------
 	function draw_object(name, y, x, color)
 		-- draw object from the vector library
 		if color then vector_color = color end
@@ -243,6 +257,16 @@ function vectorkong.startplugin()
 		vector_color = WHT
 	end
 
+	function character_colouring(character)
+		-- optional vector character colouring
+		if character == 0xb7 then return YEL end  -- Yellow Rivets
+		if character == 0x6c and read(0x638c) <= 9 and scr:frame_number() % 120 > 60 then  -- timer
+			return RED
+		end
+	end
+
+	-- Draw game objects
+	--------------------
 	function draw_ladder(y, x, h)
 		-- draw a single ladder at given y, x position of given height in pixels
 		polyline({0,0,h,0,BR,BR,0,8,h,8},y,x)  -- left and right legs
@@ -254,13 +278,12 @@ function vectorkong.startplugin()
 	function draw_girder(y1, x1, y2, x2, open)
 		-- draw girder at given y,x position.  Girders are based on parallel vectors (offset by 7 pixels).
 		polyline({y1,x1,y2,x2,BR,BR,y1+7,x1,y2+7,x2})
-		if not open or open ~= "L" then	polyline({y1,x1,y1+7,x1}) end
+		if not open or open ~= "L" then	polyline({y1,x1,y1+7,x1}) end  -- close the girder ends
 		if not open or open ~= "R" then polyline({y2,x2,y2+7,x2}) end
 		if enable_zigzags then  -- Fill the girders with optional zig zags
-			local _cnt = 0
-			for _x=x1, x2 - 1, 8 do
+			for _x=x1, x2 - 1, 16 do
 				_y = y1 + (((y2 - y1) / (x2 - x1)) * (_x - x1))
-				if _cnt % 2 == 0 then polyline({3,4,4,8,3,12}, _y, _x) end ; _cnt = _cnt + 1
+				draw_object("zigzag", _y, _x)
 			end
 		end
 	end
@@ -284,29 +307,6 @@ function vectorkong.startplugin()
 			vector_color = ({YEL, RED})[math.random(2)]
 			draw_object("flames", y+16+math.random(0,3), x)
 			draw_object("flames", y+16, x, YEL)
-		end
-	end
-
-	function draw_vector_characters()
-		-- Output vector characters based on contents of video ram ($7400-77ff)
-		local _addr = VRAM_TR
-		local _char
-		for _x=223, 0, -8 do
-			for _y=255, 0, -8 do
-				_char = mem:read_u8(_addr)
-				vector_color = character_colouring(_char)
-				polyline(vector_lib[_char], _y - 6, _x - 6)
-				vector_color = WHT
-				_addr = _addr + 1
-			end
-		end
-	end
-
-	function character_colouring(character)
-		-- optional vector character colouring
-		if character == 0xb7 then return YEL end  -- Yellow Rivets
-		if character == 0x6c and read(0x638c) <= 9 and scr:frame_number() % 120 > 60 then  -- timer
-			return RED
 		end
 	end
 
@@ -336,7 +336,7 @@ function vectorkong.startplugin()
 		vector_color = WHT
 	end
 
-	function draw_fireball()
+	function draw_fireballs()
 		local _y, _x
 		for _, _addr in ipairs{0x6400, 0x6420, 0x6440, 0x6460, 0x6480} do
 			if read(_addr, 1) then  -- fireball is active
@@ -352,10 +352,17 @@ function vectorkong.startplugin()
 
 	function draw_pauline()
 		local _y, _x = 235 - read(0x6903), 90
-		if read(0x6905) ~= 17 then _y = _y + 3 end
+		if read(0x6905) ~= 17 and read(0x6a20, 0) then _y = _y + 3 end  -- Pauline can jump when heart not showing
 		draw_object("paul-1", _y, _x, MAG)
 		draw_object("paul-2", _y, _x, PNK)
 		vector_flip = 0
+	end
+
+	function draw_loveheart()
+		_y, _x = 250 - read(0x6a23), read(0x6a20) - 23
+		if _x > 0 then
+			draw_object(read(0x6a21) + 0xf00, _y, _x, PNK)
+		end
 	end
 
 	function draw_jumpman()
@@ -373,7 +380,7 @@ function vectorkong.startplugin()
 		-- draw 100, 300, 500 or 800 when points awarded
 		if read(0x6a30) ~= 0 then
 			_y, _x = 254 - read(0x6a33), read(0x6a30) - 22
-			draw_object(read(0x6a31)+0xf00, _y+3, _x, YEL)  -- move points up a little so they don't overlap as much
+			draw_object(read(0x6a31) + 0xf00, _y+3, _x, YEL)  -- move points up a little so they don't overlap as much
 		end
 	end
 
@@ -429,7 +436,19 @@ function vectorkong.startplugin()
 		write(LEVEL, read(LEVEL) + 1)
 	end
 
-	-- vector library
+	-- Graphics memory
+	------------------
+	function clear_graphics_banks()
+		-- clear the contents of the DK graphics banks 1 and 2
+		local _bank1, _bank2 = bnk.regions[":gfx1"], bnk.regions[":gfx2"]
+		if _bank1 and _bank2 then
+			for _addr=0, 0xfff do _bank1:write_u8(_addr, 0) end
+			for _addr=0, 0x1fff do _bank2:write_u8(_addr, 0) end
+		end
+	end
+
+	-- Vector library
+	------------------
 	function load_vector_library()
 		local _lib = {}
 		_lib[0x00] = {0,2,0,4,2,6,4,6,6,4,6,2,4,0,2,0,0,2} -- 0
@@ -519,12 +538,17 @@ function vectorkong.startplugin()
 		_lib[0xf7d] = {0,0,0,4,2,4,3,1,6,4,6,0,BR,BR,0,6,0,9,6,9,6,6,0,6,BR,BR,0,11,0,14,6,14,6,11,0,11} -- 300 Points
 		_lib[0xf7e] = {1,0,0,1,0,3,1,4,3,4,4,0,6,0,6,4,BR,BR,0,6,0,9,6,9,6,6,0,6,BR,BR,0,11,0,14,6,14,6,11,0,11} -- 500 Points
 		_lib[0xf7f] = {1,0,2,0,4,4,5,4,6,3,6,1,5,0,4,0,2,4,1,4,0,3,0,1,1,0,BR,BR,0,6,0,9,6,9,6,6,0,6,BR,BR,0,11,0,14,6,14,6,11,0,11} -- 800 Points
+		-- Love heart
+		_lib[0xf76] = {0,8,5,2,7,1,10,1,12,3,12,6,10,8,12,10,12,13,10,15,7,15,5,14,0,8}  -- full heart
+		_lib[0xf77] = {0,7,5,1,7,0,10,0,12,5,11,6,10,5,8,7,5,4,2,7,0,7,BR,BR,1,9,2,9,5,7,8,10,10,8,12,10,12,13,10,15,7,15,5,14,1,9} -- broken heart
 		-- non character objects:
+		_lib["select"] = {0,0,16,0,16,16,0,16,0,0}  -- selection box
+		_lib["zigzag"] = {3,4,4,8,3,12} -- zig zags for girders
 		_lib["oilcan"] = {1,1,15,1,BR,BR,1,15,15,15,BR,BR,5,1,5,15,BR,BR,12,1,12,15,BR,BR,7,4,10,4,10,7,7,7,7,4,BR,BR,7,9,10,9,BR,BR,7,13,7,11,10,11,BR,BR,15,0,16,0,16,16,15,16,15,0,BR,BR,1,0,0,0,0,16,1,16,1,0}
 		_lib["flames"] = {0,4,2,2,3,3,8,0,4,5,5,6,9,4,5,8,4,7,2,10,2,11,4,12,9,10,4,14,0,12}
 		_lib["stack"] = {3,0,12,0,15,2,15,7,12,9,3,9,0,7,0,7,0,2,3,0}  -- stacked barrels
 		_lib["stack-1"] = {1,2,1,7,BR,BR,14,2,14,7,BR,BR,2,3,13,3,BR,BR,2,6,13,6}
-		_lib["roll"]   = {3,0,6,0,8,2,8,3,9,4,9,7,8,8,8,9,6,11,3,11,1,9,1,8,0,7,0,4,1,3,1,2,3,0}  -- barrel outline
+		_lib["roll"] = {3,0,6,0,8,2,8,3,9,4,9,7,8,8,8,9,6,11,3,11,1,9,1,8,0,7,0,4,1,3,1,2,3,0}  -- barrel outline
 		_lib["roll-1"] = {2,3,3,4,BR,BR,3,3,2,4,BR,BR,6,5,3,8}  -- regular barrel
 		_lib["roll-2"] = {2,7,3,8,BR,BR,3,7,2,8,BR,BR,3,3,6,6}
 		_lib["roll-3"] = {6,7,7,8,BR,BR,7,7,6,8,BR,BR,6,3,3,6}
@@ -533,7 +557,7 @@ function vectorkong.startplugin()
 		_lib["skull-2"] = {5,8,3,8,2,7,2,4,3,3,5,3,6,2,7,3,6,4,6,7,5,8,BR,BR,3,5,5,7}
 		_lib["skull-3"] = {7,4,7,7,6,8,4,8,3,7,3,4,2,3,3,2,4,3,6,3,7,4,BR,BR,6,5,4,7}
 		_lib["skull-4"] = {4,3,6,3,7,4,7,7,6,8,4,8,3,9,2,8,3,7,3,4,4,3,BR,BR,6,6,4,4}
-		_lib["down"]   = {2,0,7,0,9,3,9,12,7,15,2,15,0,12,0,3,2,0}  -- barrel going down ladder or crazy barrel
+		_lib["down"] = {2,0,7,0,9,3,9,12,7,15,2,15,0,12,0,3,2,0}  -- barrel going down ladder or crazy barrel
 		_lib["down-1"] = {1,1,8,1,BR,BR,1,14,8,14,BR,BR,2,3,2,12,BR,BR,7,3,7,12}
 		_lib["down-2"] = {1,1,8,1,BR,BR,1,14,8,14,BR,BR,3,3,3,12,BR,BR,6,3,6,12}
 		_lib["paul-1"] = {14,11,1,12,4,0,10,7,15,6,15,7,13,9,14,11}  -- Pauline
