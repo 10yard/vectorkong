@@ -361,7 +361,7 @@ function vectorkong.startplugin()
 	function draw_loveheart()
 		_y, _x = 250 - read(0x6a23), read(0x6a20) - 23
 		if _x > 0 then
-			draw_object(read(0x6a21) + 0xf00, _y, _x, PNK)
+			draw_object(read(0x6a21) + 0xf00, _y, _x, MAG)
 		end
 	end
 
