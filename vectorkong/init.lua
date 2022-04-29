@@ -203,7 +203,6 @@ function vectorkong.startplugin()
 	function vector(y1, x1, y2, x2)
 		-- draw a single vector
 		scr:draw_line(y1, x1, y2, x2, vector_color)
-		--scr:draw_line(y1+wobble(), x1+wobble(), y2+wobble(), x2+wobble(), intensity())
 		vector_count = vector_count + 1
 	end
 
@@ -230,17 +229,6 @@ function vectorkong.startplugin()
 		polyline({y,x,y+h,x,y+h,x+w,y,x+w,y,x})
 	end
 
-	function intensity()
-		-- we can vary the brightness of the vectors
-		--if not mac.paused then return ({0xddffffff, 0xeeffffff, 0xffffffff})[math.random(3)] else return 0xffffffff end
-		return WHT
-	end
-
-	function wobble()
-		-- random change of the vector offset
-		return 0
-	end
-
 	function cls()
 		-- clear the screen
 		scr:draw_box(0, 0, 256, 224, BLK, BLK)
@@ -252,8 +240,7 @@ function vectorkong.startplugin()
 		-- draw object from the vector library
 		if color then vector_color = color end
 		polyline(vector_lib[name], y, x)
-		if color then vector_color = WHT
-		end
+		vector_color = WHT
 	end
 
 	function draw_ladder(y, x, h)
@@ -292,12 +279,11 @@ function vectorkong.startplugin()
 
 	function draw_oilcan_and_flames(y, x)
 		draw_object("oilcan",  y, x)
-		print(read(0x6a29))
-		if not read(0x6a29, 0x70) then  -- is the oilcan on fire?
-			vector_color = ({ YEL, ORA, RED})[math.random(3)]
-			polyline(vector_lib["flames"], y+16+math.random(1,3), x)
-			polyline(vector_lib["flames"], y+16, x)
-			vector_color = WHT
+		local _sprite = read(0x6a29)
+		if _sprite >= 0x40 and _sprite <= 0x43 then  -- is the oilcan on fire?
+			vector_color = ({YEL, RED})[math.random(2)]
+			draw_object("flames", y+16+math.random(0,3), x)
+			draw_object("flames", y+16, x, YEL)
 		end
 	end
 
@@ -318,8 +304,10 @@ function vectorkong.startplugin()
 
 	function character_colouring(character)
 		-- optional vector character colouring
-		if character == 0xb7 then return YEL
-		end  -- Yellow Rivets
+		if character == 0xb7 then return YEL end  -- Yellow Rivets
+		if character == 0x6c and read(0x638c) <= 9 and scr:frame_number() % 120 > 60 then  -- timer
+			return RED
+		end
 	end
 
 	-- Sprites
@@ -353,10 +341,9 @@ function vectorkong.startplugin()
 		for _, _addr in ipairs{0x6400, 0x6420, 0x6440, 0x6460, 0x6480} do
 			if read(_addr, 1) then  -- fireball is active
 				_y, _x = 247 - read(_addr+5), read(_addr+3) - 22
-				_r = math.random(4)
-				vector_color = ({YEL-_r*0x10000000, ORA-_r*0x10000000, RED-_r*0x10000000})[math.random(3)] -- random color/intensity
+				vector_color = ({YEL, RED})[math.random(2)]
 				if read(_addr+0xd, 1) then vector_flip = 13 end  -- fireball moving right so flip the vectors
-				draw_object("fire-1", _y+_r, _x)  -- flame/body
+				draw_object("fire-1", _y+math.random(0, 2), _x)  -- flame/body
 				draw_object("fire-2", _y+2, _x, RED)  -- eyes
 				vector_flip = 0
 			end
