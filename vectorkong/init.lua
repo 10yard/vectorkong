@@ -292,10 +292,12 @@ function vectorkong.startplugin()
 	------------
 	function draw_barrels()
 		local _y, _x, _skull, _state
+
 		for _addr = 0x6700, 0x68e0, 0x20 do  -- loop through array of barrels in memory
-			if not read(_addr, 0) and read(0x6200,1) then  -- barrel is active and Jumpman is alive
+			if read(_addr) > 0 and read(0x6200, 1) and read(_addr+3) > 0 then  -- barrel active and Jumpman alive
 				_y, _x = 251 - read(_addr+5), read(_addr+3) - 20
 				_skull = read(_addr+0x15, 1) -- is a skull/blue barrel
+
 				if read(_addr+1, 1) or bits(read(_addr+2))[1] == 1 then -- barrel is crazy or going down a ladder
 					_state = read(_addr+0xf)
 					draw_object("down", _y, _x-2, ({BRN, CYN})[idx(_skull)])
@@ -474,6 +476,7 @@ function vectorkong.startplugin()
 		_lib[0x31] = {0,2,2,4,4,4,6,2} -- Right bracket
 		_lib[0x34] = {2,0,2,5,BR,BR,4,0,4,5} -- equals
 		_lib[0x35] = {3,0,3,5} -- dash
+		_lib[0x39] = {0,0,7,0,7,7,0,7,0,0} -- smash
 		_lib[0x44] = {0,5,4,5,4,7,2,7,0,8,BR,BR,2,5,2,7,BR,BR,4,10,1,10,0,11,0,12,1,13,4,13,BR,BR,0,15,4,15,4,17,2,17,2,18,0,18,0,15,BR,BR,2,15,2,17,BR,BR,0,23,0,21,4,21,4,23,BR,BR,2,21,2,22,BR,BR,0,25,4,25,0,28,4,28,BR,BR,0,30,4,30,4,32,3,33,1,33,0,32,0,30} -- rub / end
 		_lib[0x49] = {0,4,2,2,5,2,7,4,7,8,5,10,2,10,0,8,0,4,BR,BR,2,7,2,5,5,5,5,7} -- copyright
 		_lib[0x6c] = {2,0,2,4,3,5,4,4,5,5,6,4,6,0,2,0,BR,BR,4,4,4,0,BR,BR,3,7,2,8,2,11,3,12,5,12,6,11,6,8,5,7,3,7,BR,BR,2,14,6,14,2,19,6,19,BR,BR,6,21,3,21,2,22,2,25,3,26,6,26,BR,BR,2,28,2,31,4,31,4,28,5,28,6,29,6,31,BR,BR,6,-2,6,-5,-12,-5,-12,36,6,36,6,33,BR,BR,0,-3,-10,-3,-10,34,0,34,0,-3} -- bonus
