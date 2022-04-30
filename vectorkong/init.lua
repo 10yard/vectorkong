@@ -47,7 +47,7 @@ function vectorkong.startplugin()
 			cpu = mac.devices[":maincpu"]
 			mem = cpu.spaces["program"]
 		end
-		clear_graphics_banks()
+		clear_graphic_banks()
 		vector_lib = load_vector_library()
 	end
 
@@ -63,45 +63,38 @@ function vectorkong.startplugin()
 			if game_mode == 0x08 and last_mode == 0x16 then debug_stay_on_girders() end
 
 			-- handle stage backgrounds
-			if game_mode == 0x06 then adjust_title_screen() end
 			if read(VRAM_BL, 0xf0) then draw_girder_stage() end
-			--if read(VRAM_BL, 0xb0) then draw_rivet_stage() end
-			if game_mode == 0x10 then adjust_gameover_screen() end
-			if game_mode == 0x15 then adjust_name_entry_screen() end
+			if read(VRAM_BL, 0xb0) then draw_rivet_stage() end
 
+			do_screen_changes()
 			draw_vector_characters()
 			draw_points()
 
-			--debug_limits(1000)
-			--debug_vector_count()
+			--debug_limits(2000)
+			debug_vector_count()
 			last_mode = game_mode
 		end
 	end
 
-	-- Screen specific adjustments
-	------------------------------
-	function adjust_title_screen()
-		-- use simple block on title screen
-		vector_lib[0xb0] = vector_lib[0xb0a]
+	function do_screen_changes()
+		-- mode specific screen changes
+		if game_mode == 0x10 then
+			-- emphasise the game over message
+			scr:draw_box(64, 64, 88, 160, BLK, BLK)
+		elseif game_mode == 0x15 then
+			-- highlight selected character during name registration
+			_y = math.floor(read(0x6035) / 10) * -16 + 156
+			_x = read(0x6035) % 10 * 16 + 36
+			draw_object("select", _y, _x, BLU)
+		elseif game_mode == 0x6 then
+			-- restore basic block for title screen
+			vector_lib[0xb0] = vector_lib[0xfb0]
+		end
 	end
 
-	function adjust_gameover_screen()
-		-- emphasise the game over message
-		scr:draw_box(64, 64, 88, 160, BLK, BLK)
-	end
-
-	function adjust_name_entry_screen()
-		-- highlight selected character with blue box
-		_index = read(0x6035)
-		_y = math.floor(_index / 10) * -16 + 156
-		_x = _index % 10 * 16 + 36
-		draw_object("select", _y, _x, BLU)
-	end
-
-	-- Draw the various stage backgrounds
-	-------------------------------------
+	---- Draw stage backgrounds
+	---------------------------
 	function draw_girder_stage()
-		enable_zigzags = true
 		-- 1st girder
 		draw_girder(  1,   0,   1, 111, "R")  -- flat section
 		draw_girder(  1, 111,   8, 223, "L")  -- sloped section
@@ -109,64 +102,54 @@ function vectorkong.startplugin()
 		draw_ladder( 32,  80,   4) -- broken ladder top
 		draw_ladder( 13, 184,  17) -- right ladder
 		draw_oilcan_and_flames(8, 16)
-
 		-- 2nd Girder
 		draw_girder( 41,   0,  29, 207)
 		draw_ladder( 46,  32,  17)  -- left ladder
 		draw_ladder( 42,  96,  25)  -- right ladder
-
 		-- 3rd Girder
 		draw_girder( 62,  16,  74, 223)
 		draw_ladder( 72,  64,   9)  -- broken ladder bottom
 		draw_ladder( 96,  64,   7)  -- broken ladder top
 		draw_ladder( 75, 112,  25)  -- middle ladder
 		draw_ladder( 79, 184,  17)  -- right ladder
-
 		-- 4th Girder
 		draw_girder(107,   0,  95, 207)
 		draw_ladder(112,  32,  17)  -- left ladder
 		draw_ladder(110,  72,  21)  -- middle ladder
 		draw_ladder(104, 168,   9)  -- broken ladder bottom
 		draw_ladder(128, 168,   9)  -- broken ladder top
-
 		-- 5th girder
 		draw_girder(128,  16, 140, 223)
 		draw_ladder(139,  88,  13)  -- broken ladder bottom
 		draw_ladder(160,  88,   5)  -- broken ladder top
 		draw_ladder(145, 184,  17)  -- right ladder
-
 		-- 6th girder
 		draw_girder(165,   0, 165, 143, "R")  -- flat section
 		draw_girder(165, 143, 161, 207, "L")  -- sloped section
 		draw_ladder(172,  64,  52)  -- left ladder
 		draw_ladder(172,  80,  52)  -- middle ladder
 		draw_ladder(172, 128,  21)  -- right ladder
-
+		draw_stacked_barrels()
 		-- Pauline's girder
 		draw_girder(193,  88, 193, 136, "L")
-
-		draw_stacked_barrels()
-		draw_hammers()
-
-		-- Sprites
-		draw_jumpman()
 		draw_pauline()
+		draw_loveheart()
+		-- Other sprites
+		draw_jumpman()
 		draw_barrels()
 		draw_fireballs()
-		draw_loveheart()
+		draw_hammers()
 	end
 
 	function draw_rivet_stage()
-		enable_zigzags = false
-		-- alternative block for this stage
-		vector_lib[0xb0] = vector_lib[0xb0b]
+		-- Work in progress
+		vector_lib[0xb0] = {}  -- clear basic block
 
 		-- 1st floor
 		draw_girder(  1,   0,   1, 223)
 		draw_ladder( 8, 8,  33) -- left ladder
 		draw_ladder( 8, 104,  33) -- middle ladder
 		draw_ladder( 8, 208,  33) -- right ladder
-
 		-- 2nd floor
 		draw_girder(  41,   8,   41, 56)
 		draw_girder(  41,   64,   41, 160)
@@ -175,7 +158,6 @@ function vectorkong.startplugin()
 		draw_ladder( 48, 72,  33) -- ladder 2
 		draw_ladder( 48, 144,  33) -- ladder 3
 		draw_ladder( 48, 200,  33) -- ladder 4
-
 		-- 3rd floor
 		draw_girder(  81,   16,   81, 56)
 		draw_girder(  81,   64,   81, 160)
@@ -183,7 +165,6 @@ function vectorkong.startplugin()
 		draw_ladder( 88, 24,  33) -- left ladder
 		draw_ladder( 88, 104,  33) -- middle ladder
 		draw_ladder( 88, 192,  33) -- right ladder
-
 		-- 4th floor
 		draw_girder(  121,   24,   121, 56)
 		draw_girder(  121,   64,   121, 160)
@@ -192,22 +173,19 @@ function vectorkong.startplugin()
 		draw_ladder( 128, 64,  33) -- ladder 2
 		draw_ladder( 128, 152,  33) -- ladder 3
 		draw_ladder( 128, 184,  33) -- ladder 4
-
 		-- 5th floor
 		draw_girder(  161,   32,   161, 56)
 		draw_girder(  161,   64,   161, 160)
 		draw_girder(  161,  168,   161, 192)
-
 		-- Pauline's floor
 		draw_girder(  201,   56,   201, 168)
-
 		-- Sprites
 		draw_jumpman()
 		draw_fireballs()
 	end
 
-	-- Basic vector drawing functions
-	---------------------------------
+	---- Basic vector drawing functions
+	-----------------------------------
 	function vector(y1, x1, y2, x2)
 		-- draw a single vector
 		scr:draw_line(y1, x1, y2, x2, vector_color)
@@ -265,8 +243,8 @@ function vectorkong.startplugin()
 		end
 	end
 
-	-- Draw game objects
-	--------------------
+	---- Draw game objects
+	----------------------
 	function draw_ladder(y, x, h)
 		-- draw a single ladder at given y, x position of given height in pixels
 		polyline({0,0,h,0,BR,BR,0,8,h,8},y,x)  -- left and right legs
@@ -310,8 +288,8 @@ function vectorkong.startplugin()
 		end
 	end
 
-	-- Sprites
-	----------
+	---- Sprites
+	------------
 	function draw_barrels()
 		local _y, _x, _skull, _state
 		for _addr = 0x6700, 0x68e0, 0x20 do  -- loop through array of barrels in memory
@@ -384,8 +362,8 @@ function vectorkong.startplugin()
 		end
 	end
 
-	-- General functions
-	--------------------
+	---- General functions
+	----------------------
 	function read(address, comparison)
 		-- return data from memory address or boolean when the comparison value is provided
 		_d = mem:read_u8(address)
@@ -412,8 +390,8 @@ function vectorkong.startplugin()
 		if bool then return 2 else return 1 end
 	end
 
-	-- Debugging functions
-	----------------------
+	---- Debugging functions
+	------------------------
 	function debug_vector_count()
 		mac:popmessage(tostring(vector_count).." vectors")
 	end
@@ -436,9 +414,9 @@ function vectorkong.startplugin()
 		write(LEVEL, read(LEVEL) + 1)
 	end
 
-	-- Graphics memory
-	------------------
-	function clear_graphics_banks()
+	---- Graphics memory
+	--------------------
+	function clear_graphic_banks()
 		-- clear the contents of the DK graphics banks 1 and 2
 		local _bank1, _bank2 = bnk.regions[":gfx1"], bnk.regions[":gfx2"]
 		if _bank1 and _bank2 then
@@ -447,8 +425,8 @@ function vectorkong.startplugin()
 		end
 	end
 
-	-- Vector library
-	------------------
+	---- Vector library
+	--------------------
 	function load_vector_library()
 		local _lib = {}
 		_lib[0x00] = {0,2,0,4,2,6,4,6,6,4,6,2,4,0,2,0,0,2} -- 0
@@ -522,9 +500,8 @@ function vectorkong.startplugin()
 		_lib[0x8a] = _lib[0x1d] -- Alternative M's
 		_lib[0x8b] = _lib[0x1d] --
 		_lib[0x9f] = {2,0,0,2,0,13,2,15,5,15,7,13,7,2,5,0,2,0,BR,BR,5,3,5,7,BR,BR,5,5,2,5,BR,BR,2,8,5,8,4,10,5,12,2,12} -- TM
-		_lib[0xb0a] = {0,0,0,8,BR,BR,6,0,6,8} -- Simple Block for Title Screen
-		_lib[0xb0b] = {4,2,4,4,BR,BR,3,2,3,4} -- Simple Block for Rivet Stage
-		_lib[0xb0] = _lib[0xb0a]
+		_lib[0xb0] = {0,0,0,8,BR,BR,6,0,6,8} -- Basic block for title Screen
+		_lib[0xfb0] = {0,0,0,8,BR,BR,6,0,6,8} -- Copy of basic block
 		_lib[0xb1] = {0,0,7,0,7,7,0,7,0,0} -- Box
 		_lib[0xb7] = {0,0,1,0,1,1,6,1,6,0,7,0,7,6,6,6,6,5,1,5,1,6,0,6,0,0} -- Rivet
 		_lib[0xdd] = {0,0,7,0,BR,BR,4,0,4,4,BR,BR,1,4,7,4,BR,BR,2,9,1,6,7,6,7,9,BR,BR,5,6,5,9,BR,BR,7,11,2,11,3,14,BR,BR,3,16,7,16,7,18,6,19,5,18,5,16,BR,BR,7,22,5,21,BR,BR,3,21,3,21} -- Help (big H)
@@ -568,8 +545,8 @@ function vectorkong.startplugin()
 		return _lib
 	end
 
-	-- event registration
-	---------------------
+	---- event registration
+	-----------------------
 	emu.register_start(function()
 		initialize()
 	end)
