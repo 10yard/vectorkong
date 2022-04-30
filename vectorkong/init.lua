@@ -64,14 +64,14 @@ function vectorkong.startplugin()
 
 			-- handle stage backgrounds
 			if read(VRAM_BL, 0xf0) then draw_girder_stage() end
-			if read(VRAM_BL, 0xb0) then draw_rivet_stage() end
+			--if read(VRAM_BL, 0xb0) then draw_rivet_stage() end
 
 			do_screen_changes()
 			draw_vector_characters()
 			draw_points()
 
-			--debug_limits(2000)
-			debug_vector_count()
+			--debug_limits(1200)
+			--debug_vector_count()
 			last_mode = game_mode
 		end
 	end
@@ -95,6 +95,7 @@ function vectorkong.startplugin()
 	---- Draw stage backgrounds
 	---------------------------
 	function draw_girder_stage()
+		enable_zigzags = true
 		-- 1st girder
 		draw_girder(  1,   0,   1, 111, "R")  -- flat section
 		draw_girder(  1, 111,   8, 223, "L")  -- sloped section
@@ -222,7 +223,8 @@ function vectorkong.startplugin()
 		for _x=223, 0, -8 do
 			for _y=255, 0, -8 do
 				_char = mem:read_u8(_addr)
-				draw_object(_char, _y - 6, _x - 6, character_colouring(_char))
+				--if _char then draw_object(_char, _y - 6, _x - 6, character_colouring(_char)) end
+				draw_object(_char, _y - 6, _x - 6)
 				_addr = _addr + 1
 			end
 		end
@@ -230,18 +232,19 @@ function vectorkong.startplugin()
 
 	function draw_object(name, y, x, color)
 		-- draw object from the vector library
-		if color then vector_color = color end
+		vector_color = color or vector_color
 		polyline(vector_lib[name], y, x)
 		vector_color = WHT
 	end
 
-	function character_colouring(character)
-		-- optional vector character colouring
-		if character == 0xb7 then return YEL end  -- Yellow Rivets
-		if character == 0x6c and read(0x638c) <= 9 and scr:frame_number() % 120 > 60 then  -- timer
-			return RED
-		end
-	end
+	-- can this be better optimised?
+	--function character_colouring(character)
+	--	-- optional vector character colouring
+	--	if character == 0xb7 then return YEL end  -- Yellow Rivets
+	--	if character == 0x6c and read(0x638c) <= 9 and scr:frame_number() % 120 > 60 then  -- timer
+	--		return RED
+	--	end
+	--end
 
 	---- Draw game objects
 	----------------------
@@ -408,7 +411,6 @@ function vectorkong.startplugin()
 		else
 			for _=1, limit / 4 do box(_rnd(216), _rnd(200), _rnd(32)+8, _rnd(24)+8) end  -- boxes
 		end
-		debug_vector_count()
 	end
 
 	function debug_stay_on_girders()
