@@ -18,7 +18,7 @@ local vectorkong = exports
 function vectorkong.startplugin()
 	local mame_version
 	local vector_count, vector_color, vector_flip
-	local game_mode, last_mode, enable_zigzags
+	local game_mode, last_mode, smashed, enable_zigzags
 	local vector_lib = {}
 	local barrel_state = {}
 
@@ -27,6 +27,8 @@ function vectorkong.startplugin()
 	local VRAM_TR, VRAM_BL = 0x7440, 0x77bf  -- top-right and bottom-left bytes of video ram
 	local BLK, WHT, YEL, RED, BLU = 0xff000000, 0xffffffff, 0xfff0f050, 0xfff00000, 0xff0000f0  -- colors
 	local BRN, MAG, PNK, LBR, CYN = 0xffee7511, 0xfff057e8, 0xffffd1dc, 0xfff5bb9f, 0xff14f3ff
+	local BARRELS = {0x6700,0x6720,0x6740,0x6760,0x6780,0x67a0,0x67c0,0x67e0, 0x6800}
+	local FIREBALLS = {0x6400, 0x6420, 0x6440, 0x6460, 0x6480, 0x64a0}
 	local BR = 0xffff  -- break in a vector chain
 
 	function initialize()
@@ -68,7 +70,6 @@ function vectorkong.startplugin()
 
 			do_screen_changes()
 			draw_vector_characters()
-			draw_points()
 
 			--debug_limits(1200)
 			--debug_vector_count()
@@ -85,7 +86,7 @@ function vectorkong.startplugin()
 			-- highlight selected character during name registration
 			_y = math.floor(read(0x6035) / 10) * -16 + 156
 			_x = read(0x6035) % 10 * 16 + 36
-			draw_object("select", _y, _x, BLU)
+			draw_object("select", _y, _x, CYN)
 		elseif game_mode == 0x6 then
 			-- restore basic block for title screen
 			vector_lib[0xb0] = vector_lib[0xfb0]
@@ -95,7 +96,9 @@ function vectorkong.startplugin()
 	---- Draw stage backgrounds
 	---------------------------
 	function draw_girder_stage()
-		enable_zigzags = true
+		enable_zigzags = false
+		smashed = read(0x6352)
+
 		-- 1st girder
 		draw_girder(  1,   0,   1, 111, "R")  -- flat section
 		draw_girder(  1, 111,   8, 223, "L")  -- sloped section
@@ -140,6 +143,7 @@ function vectorkong.startplugin()
 		draw_barrels()
 		draw_fireballs()
 		draw_hammers()
+		draw_points()
 	end
 
 	function draw_rivet_stage()
@@ -183,6 +187,7 @@ function vectorkong.startplugin()
 		-- Sprites
 		draw_jumpman()
 		draw_fireballs()
+		draw_points()
 	end
 
 	---- Basic vector drawing functions
@@ -296,12 +301,15 @@ function vectorkong.startplugin()
 	function draw_barrels()
 		local _y, _x, _skull, _state
 
-		for _addr = 0x6700, 0x68e0, 0x20 do  -- loop through array of barrels in memory
+		for _i, _addr in ipairs(BARRELS) do
 			if read(_addr) > 0 and read(0x6200, 1) and read(_addr+3) > 0 then  -- barrel active and Jumpman alive
 				_y, _x = 251 - read(_addr+5), read(_addr+3) - 20
 				_skull = read(_addr+0x15, 1) -- is a skull/blue barrel
 
-				if read(_addr+1, 1) or bits(read(_addr+2))[1] == 1 then -- barrel is crazy or going down a ladder
+				if smashed == 0x67 and _i == read(0x6354) + 1 then -- this item was hit
+					-- destroy barrel
+					write(_addr+3, 0)
+				elseif read(_addr+1, 1) or bits(read(_addr+2))[1] == 1 then -- barrel is crazy or going down a ladder
 					_state = read(_addr+0xf)
 					draw_object("down", _y, _x-2, ({BRN, CYN})[idx(_skull)])
 					draw_object("down-"..tostring(_state % 2 + 1), _y, _x-2, ({LBR, BLU})[idx(_skull)])
@@ -321,14 +329,18 @@ function vectorkong.startplugin()
 
 	function draw_fireballs()
 		local _y, _x
-		for _, _addr in ipairs{0x6400, 0x6420, 0x6440, 0x6460, 0x6480} do
+		for _i, _addr in ipairs(FIREBALLS) do
 			if read(_addr, 1) then  -- fireball is active
-				_y, _x = 247 - read(_addr+5), read(_addr+3) - 22
-				vector_color = ({YEL, RED})[math.random(2)]
-				if read(_addr+0xd, 1) then vector_flip = 13 end  -- fireball moving right so flip the vectors
-				draw_object("fire-1", _y+math.random(0, 2), _x)  -- flame/body
-				draw_object("fire-2", _y+2, _x, RED)  -- eyes
-				vector_flip = 0
+				if smashed == 0x64 and _i == read(0x6354) + 1 then -- fireball smashed
+					write(_addr+3, 0)
+				else
+					_y, _x = 247 - read(_addr+5), read(_addr+3) - 22
+					vector_color = ({YEL, RED})[math.random(2)]
+					if read(_addr+0xd, 1) then vector_flip = 13 end  -- fireball moving right so flip the vectors
+					draw_object("fire-1", _y+math.random(0, 2), _x)  -- flame/body
+					draw_object("fire-2", _y+2, _x, RED)  -- eyes
+					vector_flip = 0
+				end
 			end
 		end
 	end
@@ -351,8 +363,8 @@ function vectorkong.startplugin()
 	function draw_jumpman()
 		local _y, _x = 255 - read(0x6205), read(0x6203) - 15
 		--local _sprite = read(0x694d)
-		vector_color = BLU
-		box(_y-7,_x-6,16,10)
+		vector_color = RED ; box(_y-7,_x-6,16,10)
+		vector_color = BLU ; polyline({-7,-6,9,4,BR,BR,9,-6,-7,4}, _y, _x)
 		vector_color = WHT
 	end
 
