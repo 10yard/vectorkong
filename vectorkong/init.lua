@@ -277,38 +277,36 @@ function vectorkong.startplugin()
 		draw_object("oilcan",  y, x)
 		local _sprite = read(0x6a29)
 		if _sprite >= 0x40 and _sprite <= 0x43 then  -- oilcan is on fire
-			vector_color = ({YEL, RED})[math.random(2)]
-			draw_object("flames", y+16+math.random(0,3), x)
 			draw_object("flames", y+16, x, YEL)
+			draw_object("flames", y+16+math.random(0,3), x, RED)
 		end
 	end
 
 	---- Sprites
 	------------
 	function draw_barrels()
-		local _y, _x, _skull, _state
+		local _y, _x, _type, _state
 		for _i, _addr in ipairs(BARRELS) do
 			if read(_addr) > 0 and read(0x6200, 1) and read(_addr+3) > 0 then  -- barrel active and Jumpman alive
 				_y, _x = 251 - read(_addr+5), read(_addr+3) - 20
-				_skull = read(_addr+0x15, 1) -- is a skull/blue barrel
+				_type = read(_addr+0x15) + 1 -- type of barrel: 1 is normal, 2 is blue/skull
 				if smashed == 0x67 and _i == read(0x6354) + 1 then -- this item was hit
 					write(_addr+3, 0)  -- clear barrel
 				elseif read(_addr+1, 1) or bits(read(_addr+2))[1] == 1 then -- barrel is crazy or going down a ladder
 					_state = read(_addr+0xf)
-					draw_object("down", _y, _x-2, ({BRN, CYN})[idx(_skull)])
-					draw_object("down-"..tostring(_state % 2 + 1), _y, _x-2, ({LBR, BLU})[idx(_skull)])
+					draw_object("down", _y, _x-2, ({BRN, CYN})[_type])
+					draw_object("down-"..tostring(_state % 2 + 1), _y, _x - 2, ({LBR, BLU})[_type])
 				else  -- barrel is rolling
 					_state = barrel_state[_addr] or 0
 					if scr:frame_number() % 10 == 0 then
-						if read(_addr+2, 2) then _state = _state-1 else _state = _state+1 end -- rolling left or right?
+						if read(_addr+2, 2) then _state = _state - 1 else _state = _state+1 end -- roll left or right?
 						barrel_state[_addr] = _state
 					end
-					draw_object("roll", _y, _x, ({BRN, CYN})[idx(_skull)])
-					draw_object(({"roll-","skull-"})[idx(_skull)]..tostring(_state%4+1),_y,_x,({LBR,BLU})[idx(_skull)])
+					draw_object("roll", _y, _x, ({BRN, CYN})[_type])
+					draw_object(({"roll-", "skull-"})[_type]..tostring(_state % 4 + 1), _y, _x,({LBR, BLU})[_type])
 				end
 			end
 		end
-		vector_color = WHT
 	end
 
 	function draw_fireballs()
@@ -319,10 +317,10 @@ function vectorkong.startplugin()
 					write(_addr+3, 0)  -- clear fireball
 				else
 					_y, _x = 247 - read(_addr+5), read(_addr+3) - 22
-					vector_color = ({YEL, RED})[math.random(2)]
 					if read(_addr+0xd, 1) then vector_flip = 13 end  -- fireball moving right so flip the vectors
-					draw_object("fire-1", _y+math.random(0, 2), _x)  -- draw flame/body
-					draw_object("fire-2", _y+2, _x, RED)  -- draw eyes
+					draw_object("fire-1", _y, _x, YEL) -- draw fixed body
+					draw_object("fire-2", _y+math.random(0,3), _x, RED) -- draw moving body
+					draw_object("fire-3", _y+2, _x, RED) -- draw eyes
 					vector_flip = 0
 				end
 			end
@@ -354,7 +352,7 @@ function vectorkong.startplugin()
 
 	function draw_points()
 		-- draw 100, 300, 500 or 800 when points awarded
-		if read(0x6a30) ~= 0 then
+		if read(0x6a30) > 0 then
 			_y, _x = 254 - read(0x6a33), read(0x6a30) - 22
 			draw_object(read(0x6a31) + 0xf00, _y+3, _x, YEL)  -- move points up a little so they don't overlap as much
 		end
@@ -381,11 +379,6 @@ function vectorkong.startplugin()
 			num=(num-rest)/2
 		end
 		return _t
-	end
-
-	function idx(bool)
-		-- return table index 2 when true, 1 when false
-		if bool then return 2 else return 1 end
 	end
 
 	---- Debugging functions
@@ -539,7 +532,8 @@ function vectorkong.startplugin()
 		_lib["paul-2"] = {20,14,21,13,21,8,15,1,15,6,15,7,20,10,20,14,18,14,16,12,16,10,14,10,BR,BR,19,12,19,13,BR,BR,2,5,0,6,1,2,3,3,2,5,BR,BR,13,6,12,2,11,2,11,7,BR,BR,10,12,9,15,10,15,12,11,BR,BR,1,12,0,13,0,9,2,9,1,12}
 		_lib["hammer"] = {5,0,7,0,8,1,8,8,7,9,5,9,4,8,4,1,5,0,BR,BR,4,4,0,4,0,5,4,5,BR,BR,8,4,9,4,9,5,8,5}
 		_lib["fire-1"] = {12,2,5,0,3,0,1,1,0,3,0,8,1,10,3,11,6,12,11,13,9,10,13,12,10,9,15,11,10,7,13,8,10,5,14,7,9,3,12,2}
-		_lib["fire-2"] = {5,3,6,4,5,5,4,4,5,3,BR,BR,5,6,6,7,5,8,4,7,5,6}
+		_lib["fire-2"] = {12,2,5,0,BR,BR,6,12,11,13,9,10,13,12,10,9,15,11,10,7,13,8,10,5,14,7,9,3,12,2}
+		_lib["fire-3"] = {5,3,6,4,5,5,4,4,5,3,BR,BR,5,6,6,7,5,8,4,7,5,6}
 		return _lib
 	end
 
