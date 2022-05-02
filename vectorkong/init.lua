@@ -256,7 +256,7 @@ function vectorkong.startplugin()
 		polyline({y1,x1,y2,x2,BR,BR,y1+7,x1,y2+7,x2})
 		if not open or open ~= "L" then	polyline({y1,x1,y1+7,x1}) end  -- close the girder ends
 		if not open or open ~= "R" then polyline({y2,x2,y2+7,x2}) end
-		----for _x=x1, x2 - 1, 16 do  -- Fill the girders with optional zig zags
+		----for _x=x1, x2 - 1, 16 do  -- Fill the girders with zig zags
 		----	draw_object("zigzag", y1 + (((y2 - y1) / (x2 - x1)) * (_x - x1)), _x)
 		----end
 	end
@@ -276,7 +276,7 @@ function vectorkong.startplugin()
 	function draw_oilcan_and_flames(y, x)
 		draw_object("oilcan",  y, x)
 		local _sprite = read(0x6a29)
-		if _sprite >= 0x40 and _sprite <= 0x43 then  -- oilcan is on fire?
+		if _sprite >= 0x40 and _sprite <= 0x43 then  -- oilcan is on fire
 			vector_color = ({YEL, RED})[math.random(2)]
 			draw_object("flames", y+16+math.random(0,3), x)
 			draw_object("flames", y+16, x, YEL)
