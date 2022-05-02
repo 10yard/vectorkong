@@ -1,6 +1,7 @@
 -- Vector Kong by Jon Wilson (10yard)
+-- This plugin replaces DK pixel graphics with high resolution vectors
 --
--- Tested with latest MAME version 0.242
+-- Tested with latest MAME version 0.243
 -- Compatible with MAME versions from 0.196
 --
 -- Minimum start up arguments:
@@ -18,7 +19,7 @@ local vectorkong = exports
 function vectorkong.startplugin()
 	local mame_version
 	local vector_count, vector_color, vector_flip
-	local game_mode, last_mode, smashed, enable_zigzags
+	local game_mode, last_mode, smashed
 	local vector_lib = {}
 	local barrel_state = {}
 
@@ -27,6 +28,7 @@ function vectorkong.startplugin()
 	local VRAM_TR, VRAM_BL = 0x7440, 0x77bf  -- top-right and bottom-left bytes of video ram
 	local BLK, WHT, YEL, RED, BLU = 0xff000000, 0xffffffff, 0xfff0f050, 0xfff00000, 0xff0000f0  -- colors
 	local BRN, MAG, PNK, LBR, CYN = 0xffee7511, 0xfff057e8, 0xffffd1dc, 0xfff5bb9f, 0xff14f3ff
+	local STACKED_BARRELS = {{173,0},{173,10},{189,0},{189,10}}
 	local BARRELS = {0x6700,0x6720,0x6740,0x6760,0x6780,0x67a0,0x67c0,0x67e0, 0x6800}
 	local FIREBALLS = {0x6400, 0x6420, 0x6440, 0x6460, 0x6480, 0x64a0}
 	local BR = 0xffff  -- break in a vector chain
@@ -68,17 +70,16 @@ function vectorkong.startplugin()
 			if read(VRAM_BL, 0xf0) then draw_girder_stage() end
 			--if read(VRAM_BL, 0xb0) then draw_rivet_stage() end
 
-			do_screen_changes()
+			screen_specific_changes()
 			draw_vector_characters()
 
-			--debug_limits(1200)
+			--debug_limits(2000)
 			--debug_vector_count()
 			last_mode = game_mode
 		end
 	end
 
-	function do_screen_changes()
-		-- mode specific screen changes
+	function screen_specific_changes()
 		if game_mode == 0x10 then
 			-- emphasise the game over message
 			scr:draw_box(64, 64, 88, 160, BLK, BLK)
@@ -96,7 +97,6 @@ function vectorkong.startplugin()
 	---- Draw stage backgrounds
 	---------------------------
 	function draw_girder_stage()
-		enable_zigzags = false
 		smashed = read(0x6352)
 
 		-- 1st girder
@@ -228,7 +228,6 @@ function vectorkong.startplugin()
 		for _x=223, 0, -8 do
 			for _y=255, 0, -8 do
 				_char = mem:read_u8(_addr)
-				--if _char then draw_object(_char, _y - 6, _x - 6, character_colouring(_char)) end
 				draw_object(_char, _y - 6, _x - 6)
 				_addr = _addr + 1
 			end
@@ -241,15 +240,6 @@ function vectorkong.startplugin()
 		polyline(vector_lib[name], y, x)
 		vector_color = WHT
 	end
-
-	-- can this be better optimised?
-	--function character_colouring(character)
-	--	-- optional vector character colouring
-	--	if character == 0xb7 then return YEL end  -- Yellow Rivets
-	--	if character == 0x6c and read(0x638c) <= 9 and scr:frame_number() % 120 > 60 then  -- timer
-	--		return RED
-	--	end
-	--end
 
 	---- Draw game objects
 	----------------------
@@ -266,30 +256,27 @@ function vectorkong.startplugin()
 		polyline({y1,x1,y2,x2,BR,BR,y1+7,x1,y2+7,x2})
 		if not open or open ~= "L" then	polyline({y1,x1,y1+7,x1}) end  -- close the girder ends
 		if not open or open ~= "R" then polyline({y2,x2,y2+7,x2}) end
-		if enable_zigzags then  -- Fill the girders with optional zig zags
-			for _x=x1, x2 - 1, 16 do
-				_y = y1 + (((y2 - y1) / (x2 - x1)) * (_x - x1))
-				draw_object("zigzag", _y, _x)
-			end
-		end
+		----for _x=x1, x2 - 1, 16 do  -- Fill the girders with optional zig zags
+		----	draw_object("zigzag", y1 + (((y2 - y1) / (x2 - x1)) * (_x - x1)), _x)
+		----end
 	end
 
 	function draw_stacked_barrels()
-		for _, _v in ipairs({{173,0},{173,10},{189,0},{189,10}}) do
+		for _, _v in ipairs(STACKED_BARRELS) do
 			draw_object("stack", _v[1], _v[2], BRN)
 			draw_object("stack-1", _v[1], _v[2], LBR)
 		end
 	end
 
 	function draw_hammers()
-		if read(0x6a18, 0x24) and read(0x6680, 1) then draw_object("hammer", 148,  17) end  -- top hammer
-		if read(0x6a1c, 0xbb) and read(0x6690, 1) then draw_object("hammer", 56, 168) end -- bottom hammer
+		if read(0x6a18, 0x24) and read(0x6680, 1) then draw_object("hammer", 148,  17, BRN) end  -- top
+		if read(0x6a1c, 0xbb) and read(0x6690, 1) then draw_object("hammer", 56, 168, BRN) end -- bottom
 	end
 
 	function draw_oilcan_and_flames(y, x)
 		draw_object("oilcan",  y, x)
 		local _sprite = read(0x6a29)
-		if _sprite >= 0x40 and _sprite <= 0x43 then  -- is the oilcan on fire?
+		if _sprite >= 0x40 and _sprite <= 0x43 then  -- oilcan is on fire?
 			vector_color = ({YEL, RED})[math.random(2)]
 			draw_object("flames", y+16+math.random(0,3), x)
 			draw_object("flames", y+16, x, YEL)
@@ -300,15 +287,12 @@ function vectorkong.startplugin()
 	------------
 	function draw_barrels()
 		local _y, _x, _skull, _state
-
 		for _i, _addr in ipairs(BARRELS) do
 			if read(_addr) > 0 and read(0x6200, 1) and read(_addr+3) > 0 then  -- barrel active and Jumpman alive
 				_y, _x = 251 - read(_addr+5), read(_addr+3) - 20
 				_skull = read(_addr+0x15, 1) -- is a skull/blue barrel
-
 				if smashed == 0x67 and _i == read(0x6354) + 1 then -- this item was hit
-					-- destroy barrel
-					write(_addr+3, 0)
+					write(_addr+3, 0)  -- clear barrel
 				elseif read(_addr+1, 1) or bits(read(_addr+2))[1] == 1 then -- barrel is crazy or going down a ladder
 					_state = read(_addr+0xf)
 					draw_object("down", _y, _x-2, ({BRN, CYN})[idx(_skull)])
@@ -332,13 +316,13 @@ function vectorkong.startplugin()
 		for _i, _addr in ipairs(FIREBALLS) do
 			if read(_addr, 1) then  -- fireball is active
 				if smashed == 0x64 and _i == read(0x6354) + 1 then -- fireball smashed
-					write(_addr+3, 0)
+					write(_addr+3, 0)  -- clear fireball
 				else
 					_y, _x = 247 - read(_addr+5), read(_addr+3) - 22
 					vector_color = ({YEL, RED})[math.random(2)]
 					if read(_addr+0xd, 1) then vector_flip = 13 end  -- fireball moving right so flip the vectors
-					draw_object("fire-1", _y+math.random(0, 2), _x)  -- flame/body
-					draw_object("fire-2", _y+2, _x, RED)  -- eyes
+					draw_object("fire-1", _y+math.random(0, 2), _x)  -- draw flame/body
+					draw_object("fire-2", _y+2, _x, RED)  -- draw eyes
 					vector_flip = 0
 				end
 			end
@@ -347,22 +331,19 @@ function vectorkong.startplugin()
 
 	function draw_pauline()
 		local _y, _x = 235 - read(0x6903), 90
-		if read(0x6905) ~= 17 and read(0x6a20, 0) then _y = _y + 3 end  -- Pauline can jump when heart not showing
+		if read(0x6905) ~= 17 and read(0x6a20, 0) then _y = _y + 3 end  -- Pauline jumps when heart not showing
 		draw_object("paul-1", _y, _x, MAG)
 		draw_object("paul-2", _y, _x, PNK)
-		vector_flip = 0
 	end
 
 	function draw_loveheart()
 		_y, _x = 250 - read(0x6a23), read(0x6a20) - 23
-		if _x > 0 then
-			draw_object(read(0x6a21) + 0xf00, _y, _x, MAG)
-		end
+		if _x > 0 then draw_object(read(0x6a21) + 0xf00, _y, _x, MAG) end
 	end
 
 	function draw_jumpman()
 		local _y, _x = 255 - read(0x6205), read(0x6203) - 15
-		--local _sprite = read(0x694d)
+		----local _sprite = read(0x694d)
 		vector_color = RED ; box(_y-7,_x-6,16,10)
 		vector_color = BLU ; polyline({-7,-6,9,4,BR,BR,9,-6,-7,4}, _y, _x)
 		vector_color = WHT
@@ -426,7 +407,7 @@ function vectorkong.startplugin()
 	end
 
 	function debug_stay_on_girders()
-		write(STAGE, 1);
+		write(STAGE, 1)
 		write(LEVEL, read(LEVEL) + 1)
 	end
 
