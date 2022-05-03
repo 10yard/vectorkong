@@ -27,11 +27,11 @@ function vectorkong.startplugin()
 	local MODE, STAGE, LEVEL = 0x600a, 0x6227, 0x6229
 	local VRAM_TR, VRAM_BL = 0x7440, 0x77bf  -- top-right and bottom-left bytes of video ram
 	local BLK, WHT, YEL, RED, BLU = 0xff000000, 0xffffffff, 0xfff0f050, 0xfff00000, 0xff0000f0  -- colors
-	local BRN, MAG, PNK, LBR, CYN = 0xffee7511, 0xfff057e8, 0xffffd1dc, 0xfff5bb9f, 0xff14f3ff
+	local BRN, MAG, PNK, LBR, CYN, GRY = 0xffee7511, 0xfff057e8, 0xffffd1dc, 0xfff5bb9f, 0xff14f3ff, 0xffc0c0c0
 	local STACKED_BARRELS = {{173,0},{173,10},{189,0},{189,10}}
-	local BARRELS = {0x6700,0x6720,0x6740,0x6760,0x6780,0x67a0,0x67c0,0x67e0, 0x6800}
+	local BARRELS = {0x6700,0x6720,0x6740,0x6760,0x6780,0x67a0,0x67c0,0x67e0,0x6800,0x6820}
 	local FIREBALLS = {0x6400, 0x6420, 0x6440, 0x6460, 0x6480, 0x64a0}
-	local BR = 0xffff  -- break in a vector chain
+	local BR = 0xffff  -- instuction to break in a vector chain
 
 	function initialize()
 		mame_version = tonumber(emu.app_version())
@@ -57,8 +57,7 @@ function vectorkong.startplugin()
 
 	function main()
 		if cpu ~= nil then
-			vector_count = 0
-			vector_flip = 0
+			vector_count, vector_flip = 0, 0
 			vector_color = WHT
 			game_mode = read(MODE)
 
@@ -73,7 +72,7 @@ function vectorkong.startplugin()
 			screen_specific_changes()
 			draw_vector_characters()
 
-			--debug_limits(2000)
+			--debug_limits(3000)
 			--debug_vector_count()
 			last_mode = game_mode
 		end
@@ -256,9 +255,9 @@ function vectorkong.startplugin()
 		polyline({y1,x1,y2,x2,BR,BR,y1+7,x1,y2+7,x2})
 		if not open or open ~= "L" then	polyline({y1,x1,y1+7,x1}) end  -- close the girder ends
 		if not open or open ~= "R" then polyline({y2,x2,y2+7,x2}) end
-		----for _x=x1, x2 - 1, 16 do  -- Fill the girders with zig zags
-		----	draw_object("zigzag", y1 + (((y2 - y1) / (x2 - x1)) * (_x - x1)), _x)
-		----end
+		for _x=x1, x2 - 1, 16 do  -- Fill the girders with zig zags
+			draw_object("zigzag", y1 + (((y2 - y1) / (x2 - x1)) * (_x - x1)), _x, GRY)
+		end
 	end
 
 	function draw_stacked_barrels()
@@ -277,8 +276,8 @@ function vectorkong.startplugin()
 		draw_object("oilcan",  y, x)
 		local _sprite = read(0x6a29)
 		if _sprite >= 0x40 and _sprite <= 0x43 then  -- oilcan is on fire
-			draw_object("flames", y+16, x, YEL)
-			draw_object("flames", y+16+math.random(0,3), x, RED)
+			draw_object("flames", y+16, x, YEL)  -- draw base of flames
+			draw_object("flames", y+16+math.random(0,3), x, RED) -- draw flames extending upwards
 		end
 	end
 
@@ -290,6 +289,7 @@ function vectorkong.startplugin()
 			if read(_addr) > 0 and read(0x6200, 1) and read(_addr+3) > 0 then  -- barrel active and Jumpman alive
 				_y, _x = 251 - read(_addr+5), read(_addr+3) - 20
 				_type = read(_addr+0x15) + 1 -- type of barrel: 1 is normal, 2 is blue/skull
+
 				if smashed == 0x67 and _i == read(0x6354) + 1 then -- this item was hit
 					write(_addr+3, 0)  -- clear barrel
 				elseif read(_addr+1, 1) or bits(read(_addr+2))[1] == 1 then -- barrel is crazy or going down a ladder
@@ -318,9 +318,9 @@ function vectorkong.startplugin()
 				else
 					_y, _x = 247 - read(_addr+5), read(_addr+3) - 22
 					if read(_addr+0xd, 1) then vector_flip = 13 end  -- fireball moving right so flip the vectors
-					draw_object("fire-1", _y, _x, YEL) -- draw fixed body
-					draw_object("fire-2", _y+math.random(0,3), _x, RED) -- draw moving body
-					draw_object("fire-3", _y+2, _x, RED) -- draw eyes
+					draw_object("fire-1", _y, _x, YEL) -- draw body
+					draw_object("fire-2", _y+math.random(0,3), _x, RED) -- draw flames extending upwards
+					draw_object("fire-3", _y+1, _x, RED) -- draw eyes
 					vector_flip = 0
 				end
 			end
@@ -342,9 +342,11 @@ function vectorkong.startplugin()
 	function draw_jumpman()
 		local _y, _x = 255 - read(0x6205), read(0x6203) - 15
 		----local _sprite = read(0x694d)
-		vector_color = RED ; box(_y-7,_x-6,16,10)
-		vector_color = BLU ; polyline({-7,-6,9,4,BR,BR,9,-6,-7,4}, _y, _x)
-		vector_color = WHT
+		if _y < 255 then
+			vector_color = RED ; box(_y-7,_x-6,16,10)
+			vector_color = BLU ; polyline({-7,-6,9,4,BR,BR,9,-6,-7,4}, _y, _x)
+			vector_color = WHT
+		end
 	end
 
 	function draw_kong()
@@ -390,6 +392,7 @@ function vectorkong.startplugin()
 	function debug_limits(limit)
 		local _rnd, _ins = math.random, table.insert
 		local _cycle = math.floor(scr:frame_number() % 540 / 180)  -- cycle through the 3 tests, each 3 seconds long
+		vector_color = 0x44ffffff
 		if _cycle == 0 then
 			for _=1, limit do vector(256, 224, _rnd(248), _rnd(224)) end  -- single vectors
 		elseif _cycle == 1 then
@@ -397,6 +400,7 @@ function vectorkong.startplugin()
 		else
 			for _=1, limit / 4 do box(_rnd(216), _rnd(200), _rnd(32)+8, _rnd(24)+8) end  -- boxes
 		end
+		vector_color = WHT
 	end
 
 	function debug_stay_on_girders()
