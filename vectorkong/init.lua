@@ -100,42 +100,42 @@ function vectorkong.startplugin()
 		smashed = read(0x6352)
 
 		-- 1st girder
-		draw_girder(  1,   0,   1, 111, "R")  -- flat section
-		draw_girder(  1, 111,   8, 223, "L")  -- sloped section
-		draw_ladder(  8,  80,   8) -- broken ladder bottom
-		draw_ladder( 32,  80,   4) -- broken ladder top
-		draw_ladder( 13, 184,  17) -- right ladder
+		draw_girder(1, 0, 1, 111, "R")  -- flat section
+		draw_girder(1, 111, 8, 223, "L")  -- sloped section
+		draw_ladder(8, 80, 8) -- broken ladder bottom
+		draw_ladder(32, 80, 4) -- broken ladder top
+		draw_ladder(13, 184, 17) -- right ladder
 		draw_oilcan_and_flames(8, 16)
 		-- 2nd Girder
-		draw_girder( 41,   0,  29, 207)
-		draw_ladder( 46,  32,  17)  -- left ladder
-		draw_ladder( 42,  96,  25)  -- right ladder
+		draw_girder(41, 0, 29, 207)
+		draw_ladder(46, 32, 17)  -- left ladder
+		draw_ladder(42, 96, 25)  -- right ladder
 		-- 3rd Girder
-		draw_girder( 62,  16,  74, 223)
-		draw_ladder( 72,  64,   9)  -- broken ladder bottom
-		draw_ladder( 96,  64,   7)  -- broken ladder top
-		draw_ladder( 75, 112,  25)  -- middle ladder
-		draw_ladder( 79, 184,  17)  -- right ladder
+		draw_girder(62, 16, 74, 223)
+		draw_ladder(72, 64, 9)  -- broken ladder bottom
+		draw_ladder(96, 64, 7)  -- broken ladder top
+		draw_ladder(75, 112, 25)  -- middle ladder
+		draw_ladder(79, 184, 17)  -- right ladder
 		-- 4th Girder
-		draw_girder(107,   0,  95, 207)
-		draw_ladder(112,  32,  17)  -- left ladder
-		draw_ladder(110,  72,  21)  -- middle ladder
-		draw_ladder(104, 168,   9)  -- broken ladder bottom
-		draw_ladder(128, 168,   9)  -- broken ladder top
+		draw_girder(107, 0, 95, 207)
+		draw_ladder(112, 32, 17)  -- left ladder
+		draw_ladder(110, 72, 21)  -- middle ladder
+		draw_ladder(104, 168, 9)  -- broken ladder bottom
+		draw_ladder(128, 168, 9)  -- broken ladder top
 		-- 5th girder
-		draw_girder(128,  16, 140, 223)
-		draw_ladder(139,  88,  13)  -- broken ladder bottom
-		draw_ladder(160,  88,   5)  -- broken ladder top
-		draw_ladder(145, 184,  17)  -- right ladder
+		draw_girder(128, 16, 140, 223)
+		draw_ladder(139, 88, 13)  -- broken ladder bottom
+		draw_ladder(160, 88, 5)  -- broken ladder top
+		draw_ladder(145, 184, 17)  -- right ladder
 		-- 6th girder
-		draw_girder(165,   0, 165, 143, "R")  -- flat section
+		draw_girder(165, 0, 165, 143, "R")  -- flat section
 		draw_girder(165, 143, 161, 207, "L")  -- sloped section
-		draw_ladder(172,  64,  52)  -- left ladder
-		draw_ladder(172,  80,  52)  -- middle ladder
-		draw_ladder(172, 128,  21)  -- right ladder
+		draw_ladder(172, 64, 52)  -- left ladder
+		draw_ladder(172, 80, 52)  -- middle ladder
+		draw_ladder(172, 128, 21)  -- right ladder
 		draw_stacked_barrels()
 		-- Pauline's girder
-		draw_girder(193,  88, 193, 136, "L")
+		draw_girder(193, 88, 193, 136, "L")
 		draw_pauline()
 		draw_loveheart()
 		-- Other sprites
@@ -151,39 +151,39 @@ function vectorkong.startplugin()
 		vector_lib[0xb0] = {}  -- clear basic block
 
 		-- 1st floor
-		draw_girder(  1,   0,   1, 223)
-		draw_ladder( 8, 8,  33) -- left ladder
-		draw_ladder( 8, 104,  33) -- middle ladder
-		draw_ladder( 8, 208,  33) -- right ladder
+		draw_girder(1, 0, 1, 223)
+		draw_ladder(8, 8, 33) -- left ladder
+		draw_ladder(8, 104, 33) -- middle ladder
+		draw_ladder(8, 208, 33) -- right ladder
 		-- 2nd floor
-		draw_girder(  41,   8,   41, 56)
-		draw_girder(  41,   64,   41, 160)
-		draw_girder(  41,   168,   41, 216)
-		draw_ladder( 48, 16,  33) -- ladder 1
-		draw_ladder( 48, 72,  33) -- ladder 2
-		draw_ladder( 48, 144,  33) -- ladder 3
-		draw_ladder( 48, 200,  33) -- ladder 4
+		draw_girder(41, 8, 41, 56)
+		draw_girder(41, 64, 41, 160)
+		draw_girder(41, 168, 41, 216)
+		draw_ladder(48, 16, 33) -- ladder 1
+		draw_ladder(48, 72, 33) -- ladder 2
+		draw_ladder(48, 144, 33) -- ladder 3
+		draw_ladder(48, 200, 33) -- ladder 4
 		-- 3rd floor
-		draw_girder(  81,   16,   81, 56)
-		draw_girder(  81,   64,   81, 160)
-		draw_girder(  81,   168,   81, 208)
-		draw_ladder( 88, 24,  33) -- left ladder
-		draw_ladder( 88, 104,  33) -- middle ladder
-		draw_ladder( 88, 192,  33) -- right ladder
+		draw_girder(81, 16, 81, 56)
+		draw_girder(81, 64, 81, 160)
+		draw_girder(81, 168, 81, 208)
+		draw_ladder(88, 24, 33) -- left ladder
+		draw_ladder(88, 104, 33) -- middle ladder
+		draw_ladder(88, 192, 33) -- right ladder
 		-- 4th floor
-		draw_girder(  121,   24,   121, 56)
-		draw_girder(  121,   64,   121, 160)
-		draw_girder(  121,   168,   121, 200)
-		draw_ladder( 128, 32,  33) -- ladder 1
-		draw_ladder( 128, 64,  33) -- ladder 2
-		draw_ladder( 128, 152,  33) -- ladder 3
-		draw_ladder( 128, 184,  33) -- ladder 4
+		draw_girder(121, 24, 121, 56)
+		draw_girder(121, 64, 121, 160)
+		draw_girder(121, 168, 121, 200)
+		draw_ladder(128, 32, 33) -- ladder 1
+		draw_ladder(128, 64, 33) -- ladder 2
+		draw_ladder(128, 152, 33) -- ladder 3
+		draw_ladder(128, 184, 33) -- ladder 4
 		-- 5th floor
-		draw_girder(  161,   32,   161, 56)
-		draw_girder(  161,   64,   161, 160)
-		draw_girder(  161,  168,   161, 192)
+		draw_girder(161, 32, 161, 56)
+		draw_girder(161, 64, 161, 160)
+		draw_girder(161, 168, 161, 192)
 		-- Pauline's floor
-		draw_girder(  201,   56,   201, 168)
+		draw_girder(201, 56, 201, 168)
 		-- Sprites
 		draw_jumpman()
 		draw_fireballs()
