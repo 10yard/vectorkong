@@ -95,7 +95,7 @@ function vectorkong.startplugin()
 			-- display multiple kongs on the how high can you get screen
 			_y, _x = 24, 92
 			for _i=1, mem:read_u8(0x622e) do
-				draw_kong(_y, _x, true)
+				draw_kong(_y, _x)
 				_y = _y + 32
 			end
 		end
@@ -104,8 +104,8 @@ function vectorkong.startplugin()
 	---- Draw stage backgrounds
 	---------------------------
 	function draw_girder_stage()
-		smashed = read(0x6352)
 		local _growling = game_mode == 0x16 and read(0x6388) >= 4
+		smashed = read(0x6352)
 
 		-- 1st girder
 		draw_girder(1, 0, 1, 111, "R")  -- flat section
@@ -210,17 +210,18 @@ function vectorkong.startplugin()
 	function polyline(data, offset_y, offset_x)
 		-- draw multiple chained lines from a table of y,x points.  Optional offset for start y,x.
 		local _offy, _offx = offset_y or 0, offset_x or 0
-		local _y, _x
+		local _savey, _savex, _datay, _datax
 		if data then
 			for _i=1, #data, 2 do
-				if _y and _x and data[_i] ~= BR and data[_i+1] ~= BR and _y ~= BR and _x ~= BR then
+				_datay, _datax = data[_i], data[_i+1]
+				if _savey and _savex and _datay ~= BR and _datax ~= BR and _savey ~= BR and _savex ~= BR then
 					if vector_flip > 0 then
-						vector(data[_i]+_offy, vector_flip-data[_i+1]+_offx, _y+_offy, vector_flip-_x+_offx)
+						vector(_datay+_offy, vector_flip-_datax+_offx, _savey+_offy, vector_flip-_savex+_offx)
 					else
-						vector(data[_i]+_offy, data[_i+1]+_offx, _y+_offy, _x+_offx)
+						vector(_datay+_offy, _datax+_offx, _savey+_offy, _savex+_offx)
 					end
 				end
-				_y, _x =data[_i], data[_i+1]
+				_savey, _savex = _datay, _datax
 			end
 		end
 	end
@@ -233,11 +234,9 @@ function vectorkong.startplugin()
 	function draw_vector_characters()
 		-- Output vector characters based on contents of video ram ($7400-77ff)
 		local _addr = VRAM_TR
-		local _char
 		for _x=223, 0, -8 do
 			for _y=255, 0, -8 do
-				_char = mem:read_u8(_addr)
-				draw_object(_char, _y - 6, _x - 6)
+				draw_object(mem:read_u8(_addr), _y - 6, _x - 6)
 				_addr = _addr + 1
 			end
 		end
