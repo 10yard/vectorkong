@@ -26,8 +26,8 @@ function vectorkong.startplugin()
 	-- Constants
 	local MODE, STAGE, LEVEL = 0x600a, 0x6227, 0x6229
 	local VRAM_TR, VRAM_BL = 0x7440, 0x77bf  -- top-right and bottom-left bytes of video ram
-	local BLK, WHT, YEL, RED, BLU = 0xff000000, 0xffffffff, 0xfff0f050, 0xfff00000, 0xff0000f0  -- colors
-	local BRN, MAG, PNK, LBR, CYN, GRY = 0xffee7511, 0xfff057e8, 0xffffd1dc, 0xfff5bb9f, 0xff14f3ff, 0xffc0c0c0
+	local BLK, WHT, YEL, RED, BLU, MBR = 0xff000000, 0xffffffff, 0xfff0f050, 0xfff00000, 0xff0000f0, 0xe0f27713 -- color
+	local BRN, MAG, PNK, LBR, CYN, GRY = 0xffD60609, 0xfff057e8, 0xffffd1dc, 0xfff5bca0, 0xff14f3ff, 0xffb0b0b0
 	local STACKED_BARRELS = {{173,0},{173,10},{189,0},{189,10}}
 	local BARRELS = {0x6700,0x6720,0x6740,0x6760,0x6780,0x67a0,0x67c0,0x67e0,0x6800,0x6820}
 	local FIREBALLS = {0x6400, 0x6420, 0x6440, 0x6460, 0x6480, 0x64a0}
@@ -79,17 +79,25 @@ function vectorkong.startplugin()
 	end
 
 	function screen_specific_changes()
+		local _y, _x
 		if game_mode == 0x10 then
 			-- emphasise the game over message
 			scr:draw_box(64, 64, 88, 160, BLK, BLK)
 		elseif game_mode == 0x15 then
 			-- highlight selected character during name registration
-			_y = math.floor(read(0x6035) / 10) * -16 + 156
-			_x = read(0x6035) % 10 * 16 + 36
+			_y, _x = math.floor(read(0x6035) / 10) * -16 + 156, read(0x6035) % 10 * 16 + 36
 			draw_object("select", _y, _x, CYN)
 		elseif game_mode == 0x6 then
-			-- restore basic block for title screen
+			-- restore basic block for title screen and display growling kong
 			vector_lib[0xb0] = vector_lib[0xfb0]
+			draw_kong(48, 92, true)
+		elseif game_mode == 0xa then
+			-- display multiple kongs on the how high can you get screen
+			_y, _x = 24, 92
+			for _i=1, mem:read_u8(0x622e) do
+				draw_kong(_y, _x, true)
+				_y = _y + 32
+			end
 		end
 	end
 
@@ -97,6 +105,7 @@ function vectorkong.startplugin()
 	---------------------------
 	function draw_girder_stage()
 		smashed = read(0x6352)
+		local _growling = game_mode == 0x16 and read(0x6388) >= 4
 
 		-- 1st girder
 		draw_girder(1, 0, 1, 111, "R")  -- flat section
@@ -143,6 +152,7 @@ function vectorkong.startplugin()
 		draw_fireballs()
 		draw_hammers()
 		draw_points()
+		draw_kong(172, 24, _growling)
 	end
 
 	function draw_rivet_stage()
@@ -262,14 +272,14 @@ function vectorkong.startplugin()
 
 	function draw_stacked_barrels()
 		for _, _v in ipairs(STACKED_BARRELS) do
-			draw_object("stack", _v[1], _v[2], BRN)
+			draw_object("stack", _v[1], _v[2], MBR)
 			draw_object("stack-1", _v[1], _v[2], LBR)
 		end
 	end
 
 	function draw_hammers()
-		if read(0x6a18, 0x24) and read(0x6680, 1) then draw_object("hammer", 148,  17, BRN) end  -- top
-		if read(0x6a1c, 0xbb) and read(0x6690, 1) then draw_object("hammer", 56, 168, BRN) end -- bottom
+		if read(0x6a18, 0x24) and read(0x6680, 1) then draw_object("hammer", 148,  17, MBR) end  -- top
+		if read(0x6a1c, 0xbb) and read(0x6690, 1) then draw_object("hammer", 56, 168, MBR) end -- bottom
 	end
 
 	function draw_oilcan_and_flames(y, x)
@@ -294,7 +304,7 @@ function vectorkong.startplugin()
 					write(_addr+3, 0)  -- clear barrel
 				elseif read(_addr+1, 1) or bits(read(_addr+2))[1] == 1 then -- barrel is crazy or going down a ladder
 					_state = read(_addr+0xf)
-					draw_object("down", _y, _x-2, ({BRN, CYN})[_type])
+					draw_object("down", _y, _x-2, ({MBR, CYN})[_type])
 					draw_object("down-"..tostring(_state % 2 + 1), _y, _x - 2, ({LBR, BLU})[_type])
 				else  -- barrel is rolling
 					_state = barrel_state[_addr] or 0
@@ -302,7 +312,7 @@ function vectorkong.startplugin()
 						if read(_addr+2, 2) then _state = _state - 1 else _state = _state+1 end -- roll left or right?
 						barrel_state[_addr] = _state
 					end
-					draw_object("roll", _y, _x, ({BRN, CYN})[_type])
+					draw_object("roll", _y, _x, ({MBR, CYN})[_type])
 					draw_object(({"roll-", "skull-"})[_type]..tostring(_state % 4 + 1), _y, _x,({LBR, BLU})[_type])
 				end
 			end
@@ -349,7 +359,19 @@ function vectorkong.startplugin()
 		end
 	end
 
-	function draw_kong()
+	function draw_kong(y, x, growl)
+		-- draw kong in 2 passes - using flipped vectors
+		for _i=0, 20, 20 do
+			vector_flip = _i
+			draw_object("kong-1", y, x+_i, MBR)
+			draw_object("kong-2", y, x+_i, BRN)
+			draw_object("kong-3", y, x+_i, LBR)
+			if growl then
+				draw_object("growl-1", y, x+_i, MBR)
+				draw_object("growl-2", y, x+_i, PNK)
+			end
+		end
+		vector_flip = 0
 	end
 
 	function draw_points()
@@ -538,6 +560,11 @@ function vectorkong.startplugin()
 		_lib["fire-1"] = {12,2,5,0,3,0,1,1,0,3,0,8,1,10,3,11,6,12,11,13,9,10,13,12,10,9,15,11,10,7,13,8,10,5,14,7,9,3,12,2}
 		_lib["fire-2"] = {12,2,5,0,BR,BR,6,12,11,13,9,10,13,12,10,9,15,11,10,7,13,8,10,5,14,7,9,3,12,2}
 		_lib["fire-3"] = {5,3,6,4,5,5,4,4,5,3,BR,BR,5,6,6,7,5,8,4,7,5,6}
+		_lib["kong-1"] = {27,13,27,11,26,10,25,10,21,11,20,14,19,14,18,16,18,20,BR,BR,27,13,25,13,25,15,28,15,29,16,30,18,30,19,29,20,BR,BR,2,12,0,11,0,0,2,2,2,4,BR,BR,16,13,16,15,15,18,14,19,12,19,10,17,10,13,BR,BR,6,17,7,17,8,16,BR,BR,6,19,7,19,8,18,BR,BR,1,10,2,11,BR,BR,1,5,2,6,BR,BR,28,17,28,19,26,19,26,17,28,17}
+		_lib["kong-2"] = {31,20,31,17,27,13,BR,BR,25,20,25,18,24,18,24,20,BR,BR,21,15,22,16,22,20,BR,BR,26,18,27,18,27,19,26,19,26,18,BR,BR,6,20,6,16,2,12,BR,BR,2,4,4,4,5,3,7,3,11,7,13,7,13,4,16,1,19,1,23,6,24,8,24,10,BR,BR,7,15,8,14,10,14,BR,BR,19,6,17,10,16,13,BR,BR,10,13,11,10}
+		_lib["kong-3"] = {26,18,27,18,27,19,26,19,26,18}
+		_lib["growl-1"] = {21,15,22,16,22,20,BR,BR,21,14,20,16,20,20} -- DK's Growling mouth
+		_lib["growl-2"] = {21,16,21,18,BR,BR,22,17,20,17,BR,BR,21,19,21,20,BR,BR,22,20,20,20} -- DK's Growling teeth
 		return _lib
 	end
 
