@@ -51,7 +51,7 @@ function vectorkong.startplugin()
 			cpu = mac.devices[":maincpu"]
 			mem = cpu.spaces["program"]
 		end
-		clear_graphic_banks()
+		--clear_graphic_banks()
 		vector_lib = load_vector_library()
 	end
 
@@ -360,14 +360,29 @@ function vectorkong.startplugin()
 
 	function draw_kong(y, x, growl)
 		-- draw kong in 2 passes - using flipped vectors
-		for _i=0, 20, 20 do
-			vector_flip = _i
-			draw_object("kong-1", y, x+_i, MBR)
-			draw_object("kong-2", y, x+_i, BRN)
-			draw_object("kong-3", y, x+_i, LBR)
-			if growl then
-				draw_object("growl-1", y, x+_i, MBR)
-				draw_object("growl-2", y, x+_i, PNK)
+		local _state = read(0x691d)
+		if _state == 45 then
+			-- DK grabbing barrel to left
+			vector_flip = 42
+			draw_object("dksd-1", y, x-3, BRN)
+			draw_object("dksd-2", y, x-3, MBR)
+			draw_object("dksd-3", y, x-3, LBR)
+		elseif _state == 173 then
+			-- DK releasing barrel to right
+			draw_object("dksd-1", y, x+1, BRN)
+			draw_object("dksd-2", y, x+1, MBR)
+			draw_object("dksd-3", y, x+1, LBR)
+		else
+			-- DK front facing
+			for _i=0, 20, 20 do
+				vector_flip = _i
+				draw_object("dkfr-1", y, x+_i, BRN)
+				draw_object("dkfr-2", y, x+_i, MBR)
+				draw_object("dkfr-3", y, x+_i, LBR)
+				if growl then
+					draw_object("growl-1", y, x+_i, MBR)
+					draw_object("growl-2", y, x+_i, LBR)
+				end
 			end
 		end
 		vector_flip = 0
@@ -559,11 +574,14 @@ function vectorkong.startplugin()
 		_lib["fire-1"] = {12,2,5,0,3,0,1,1,0,3,0,8,1,10,3,11,6,12,11,13,9,10,13,12,10,9,15,11,10,7,13,8,10,5,14,7,9,3,12,2}
 		_lib["fire-2"] = {12,2,5,0,BR,BR,6,12,11,13,9,10,13,12,10,9,15,11,10,7,13,8,10,5,14,7,9,3,12,2}
 		_lib["fire-3"] = {5,3,6,4,5,5,4,4,5,3,BR,BR,5,6,6,7,5,8,4,7,5,6}
-		_lib["kong-1"] = {27,13,27,11,26,10,25,10,21,11,20,14,19,14,18,16,18,20,BR,BR,27,13,25,13,25,15,28,15,29,16,30,18,30,19,29,20,BR,BR,2,12,0,11,0,0,2,2,2,4,BR,BR,16,13,16,15,15,18,14,19,12,19,10,17,10,13,BR,BR,6,17,7,17,8,16,BR,BR,6,19,7,19,8,18,BR,BR,1,10,2,11,BR,BR,1,5,2,6,BR,BR,28,17,28,19,26,19,26,17,28,17}
-		_lib["kong-2"] = {31,20,31,17,27,13,BR,BR,25,20,25,18,24,18,24,20,BR,BR,21,15,22,16,22,20,BR,BR,26,18,27,18,27,19,26,19,26,18,BR,BR,6,20,6,16,2,12,BR,BR,2,4,4,4,5,3,7,3,11,7,13,7,13,4,16,1,19,1,23,6,24,8,24,10,BR,BR,7,15,8,14,10,14,BR,BR,19,6,17,10,16,13,BR,BR,10,13,11,10}
-		_lib["kong-3"] = {26,18,27,18,27,19,26,19,26,18}
-		_lib["growl-1"] = {21,15,22,16,22,20,BR,BR,21,14,20,16,20,20} -- DK's Growling mouth
-		_lib["growl-2"] = {21,16,21,18,BR,BR,22,17,20,17,BR,BR,21,19,21,20,BR,BR,22,20,20,20} -- DK's Growling teeth
+		_lib["dkfr-1"] = {27,13,25,13,25,15,28,15,29,16,30,18,30,19,29,20,BR,BR,31,20,31,17,27,13,BR,BR,25,20,25,18,24,18,24,20,BR,BR,21,15,22,16,22,20,BR,BR,26,18,27,18,27,19,26,19,26,18,BR,BR,6,20,6,16,2,12,BR,BR,2,4,4,4,5,3,7,3,11,7,13,7,13,4,16,1,19,1,23,6,24,8,24,10,BR,BR,7,15,8,14,10,14,BR,BR,19,6,17,10,16,13,BR,BR,10,13,11,10}  -- DK front
+		_lib["dkfr-2"] = {27,13,27,11,26,10,25,10,21,11,20,14,19,14,18,16,18,20,BR,BR,2,12,0,11,0,0,2,2,2,4,BR,BR,16,13,16,15,15,18,14,19,12,19,10,17,10,13,BR,BR,6,17,7,17,8,16,BR,BR,6,19,7,19,8,18,BR,BR,1,10,2,11,BR,BR,1,5,2,6,BR,BR,28,17,28,19,26,19,26,17,28,17} -- DK highlights
+		_lib["dkfr-3"] = {26,18,27,18,27,19,26,19,26,18} -- DK eyes
+		_lib["dksd-1"] = {7,1,7,5,9,7,11,7,17,13,23,15,26,18,28,23,28,26,30,28,31,30,31,35,30,36,BR,BR,2,6,3,7,3,13,5,15,5,23,4,23,2,22,BR,BR,2,30,5,31,10,28,BR,BR,3,35,10,28,18,21,23,21,24,22,BR,BR,7,39,13,35,17,32,BR,BR,19,35,21,37,21,41,BR,BR,26,38,26,40,25,40,25,38,26,38,BR,BR,6,16,7,17,10,23,10,25,BR,BR,6,22,8,24,9,26,BR,BR,30,36,30,35,27,31,24,34,22,34,21,33,21,32}  -- DK side
+		_lib["dksd-2"] = {7,1,1,1,0,2,0,8,2,6,BR,BR,5,2,5,3,BR,BR,1,2,2,3,BR,BR,2,22,0,22,0,34,2,32,2,30,BR,BR,1,24,2,24,BR,BR,1,29,2,28,BR,BR,3,35,0,39,0,41,1,42,2,42,4,40,5,40,6,42,7,42,7,39,BR,BR,17,32,17,36,18,39,21,42,22,42,24,41,25,40,BR,BR,26,38,30,36,BR,BR,21,32,23,30,25,30,26,29,26,28,25,27,24,27,20,31,17,32,BR,BR,28,36,28,34,26,34,26,36,28,36} -- DK highlights
+		_lib["dksd-3"] = {27,36,27,35,26,35,26,36,27,36}  -- DK eyes
+		_lib["growl-1"] = {21,15,22,16,22,20,BR,BR,21,14,20,16,20,20} -- DK growling mouth
+		_lib["growl-2"] = {21,16,21,18,BR,BR,22,17,20,17,BR,BR,21,19,21,20,BR,BR,22,20,20,20} -- DK teeth
 		return _lib
 	end
 
