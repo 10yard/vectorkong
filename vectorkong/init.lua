@@ -18,7 +18,7 @@ local vectorkong = exports
 
 function vectorkong.startplugin()
 	local mame_version
-	local vector_count, vector_color, vector_flip
+	local vector_count, vector_color
 	local game_mode, last_mode, smashed
 	local vector_lib = {}
 	local barrel_state = {}
@@ -57,7 +57,7 @@ function vectorkong.startplugin()
 
 	function main()
 		if cpu ~= nil then
-			vector_count, vector_flip = 0, 0
+			vector_count = 0
 			vector_color = WHT
 			game_mode = read(MODE)
 
@@ -207,7 +207,7 @@ function vectorkong.startplugin()
 		vector_count = vector_count + 1
 	end
 
-	function polyline(data, offset_y, offset_x)
+	function polyline(data, offset_y, offset_x, flip)
 		-- draw multiple chained lines from a table of y,x points.  Optional offset for start y,x.
 		local _offy, _offx = offset_y or 0, offset_x or 0
 		local _savey, _savex, _datay, _datax
@@ -215,8 +215,8 @@ function vectorkong.startplugin()
 			for _i=1, #data, 2 do
 				_datay, _datax = data[_i], data[_i+1]
 				if _savey and _savex and _datay ~= BR and _datax ~= BR and _savey ~= BR and _savex ~= BR then
-					if vector_flip > 0 then
-						vector(_datay+_offy, vector_flip-_datax+_offx, _savey+_offy, vector_flip-_savex+_offx)
+					if flip and flip > 0 then
+						vector(_datay+_offy, flip-_datax+_offx, _savey+_offy, flip-_savex+_offx)
 					else
 						vector(_datay+_offy, _datax+_offx, _savey+_offy, _savex+_offx)
 					end
@@ -242,10 +242,10 @@ function vectorkong.startplugin()
 		end
 	end
 
-	function draw_object(name, y, x, color)
+	function draw_object(name, y, x, color, flip)
 		-- draw object from the vector library
 		vector_color = color or vector_color
-		polyline(vector_lib[name], y, x)
+		polyline(vector_lib[name], y, x, flip)
 		vector_color = WHT
 	end
 
@@ -319,18 +319,17 @@ function vectorkong.startplugin()
 	end
 
 	function draw_fireballs()
-		local _y, _x
+		local _y, _x, _flip
 		for _i, _addr in ipairs(FIREBALLS) do
 			if read(_addr, 1) then  -- fireball is active
 				if smashed == 0x64 and _i == read(0x6354) + 1 then -- fireball smashed
 					write(_addr+3, 0)  -- clear fireball
 				else
 					_y, _x = 247 - read(_addr+5), read(_addr+3) - 22
-					if read(_addr+0xd, 1) then vector_flip = 13 end  -- fireball moving right so flip the vectors
-					draw_object("fire-1", _y, _x, YEL) -- draw body
-					draw_object("fire-2", _y+math.random(0,3), _x, RED) -- draw flames extending upwards
-					draw_object("fire-3", _y+1, _x, RED) -- draw eyes
-					vector_flip = 0
+					if read(_addr+0xd, 1) then _flip = 13 end  -- fireball moving right so flip the vectors
+					draw_object("fire-1", _y, _x, YEL, _flip) -- draw body
+					draw_object("fire-2", _y+math.random(0,3), _x, RED, _flip) -- draw flames extending upwards
+					draw_object("fire-3", _y+1, _x, RED, _flip) -- draw eyes
 				end
 			end
 		end
@@ -359,33 +358,42 @@ function vectorkong.startplugin()
 	end
 
 	function draw_kong(y, x, growl)
-		-- draw kong in 2 passes - using flipped vectors
+		local _data = {"roll-1", MBR, LBR}
 		local _state = read(0x691d)
-		if _state == 45 then
-			-- DK grabbing barrel to left
-			vector_flip = 42
-			draw_object("dksd-1", y, x-3, BRN)
-			draw_object("dksd-2", y, x-3, MBR)
-			draw_object("dksd-3", y, x-3, LBR)
-		elseif _state == 173 then
-			-- DK releasing barrel to right
-			draw_object("dksd-1", y, x+1, BRN)
-			draw_object("dksd-2", y, x+1, MBR)
-			draw_object("dksd-3", y, x+1, LBR)
+		if _state == 45 or _state == 173 or _state == 42 then
+			if read(0x6382, 128) or read(0x6382, 129) then _data = {"skull-1", CYN, BLU} end
+			if _state == 45 then
+				-- DK grabbing barrel to left
+				draw_object("dksd-1", y, x-3, BRN, 42)
+				draw_object("dksd-2", y, x-3, MBR, 42)
+				draw_object("dksd-3", y, x-3, LBR, 42)
+				draw_object("roll", y, x-15, _data[2])
+				draw_object(_data[1], y, x-15, _data[3])
+			elseif _state == 173 then
+				-- DK releasing barrel to right
+				draw_object("dksd-1", y, x+1, BRN)
+				draw_object("dksd-2", y, x+1, MBR)
+				draw_object("dksd-3", y, x+1, LBR)
+				draw_object("roll", y, x+44, _data[2])
+				draw_object(_data[1], y, x+44, _data[3])
+			elseif _state == 42 then
+				-- DK front facing (mirrored) - needs a sprite with grabbing hands
+				draw_object("dkfr-1", y, x, BRN); draw_object("dkfr-1", y, x+20, BRN, 20)
+				draw_object("dkfr-2", y, x, MBR); draw_object("dkfr-2", y, x+20, MBR, 20)
+				draw_object("dkfr-3", y, x, LBR); draw_object("dkfr-3", y, x+20, LBR, 20)
+				draw_object("down", y, x+13, _data[2])
+				draw_object("down-1", y, x+13, _data[3])
+			end
 		else
-			-- DK front facing
-			for _i=0, 20, 20 do
-				vector_flip = _i
-				draw_object("dkfr-1", y, x+_i, BRN)
-				draw_object("dkfr-2", y, x+_i, MBR)
-				draw_object("dkfr-3", y, x+_i, LBR)
-				if growl then
-					draw_object("growl-1", y, x+_i, MBR)
-					draw_object("growl-2", y, x+_i, LBR)
-				end
+			-- DK front facing (mirrored)
+			draw_object("dkfr-1", y, x, BRN); draw_object("dkfr-1", y, x+20, BRN, 20)
+			draw_object("dkfr-2", y, x, MBR); draw_object("dkfr-2", y, x+20, MBR, 20)
+			draw_object("dkfr-3", y, x, LBR); draw_object("dkfr-3", y, x+20, LBR, 20)
+			if growl then
+				draw_object("growl-1", y, x, MBR); draw_object("growl-1", y, x+20, MBR, 20)
+				draw_object("growl-2", y, x, LBR); draw_object("growl-2", y, x+20, LBR, 20)
 			end
 		end
-		vector_flip = 0
 	end
 
 	function draw_points()
