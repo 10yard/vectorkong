@@ -51,7 +51,7 @@ function vectorkong.startplugin()
 			cpu = mac.devices[":maincpu"]
 			mem = cpu.spaces["program"]
 		end
-		--clear_graphic_banks()
+		clear_graphic_banks()
 		vector_lib = load_vector_library()
 	end
 
