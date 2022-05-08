@@ -19,7 +19,7 @@ local vectorkong = exports
 function vectorkong.startplugin()
 	local mame_version
 	local vector_count, vector_color
-	local game_mode, last_mode, smashed
+	local game_mode, last_mode, smashed, zigzags
 	local vector_lib = {}
 	local barrel_state = {}
 
@@ -30,7 +30,7 @@ function vectorkong.startplugin()
 	local BRN, MAG, PNK, LBR, CYN, GRY = 0xffD60609, 0xfff057e8, 0xffffd1dc, 0xfff5bca0, 0xff14f3ff, 0xffb0b0b0
 	local STACKED_BARRELS = {{173,0},{173,10},{189,0},{189,10}}
 	local BARRELS = {0x6700,0x6720,0x6740,0x6760,0x6780,0x67a0,0x67c0,0x67e0,0x6800,0x6820}
-	local FIREBALLS = {0x6400, 0x6420, 0x6440, 0x6460, 0x6480, 0x64a0}
+	local FIREBALLS = {0x6400, 0x6420, 0x6440, 0x6460, 0x6480}
 	local BR = 0xffff  -- instuction to break in a vector chain
 
 	function initialize()
@@ -87,7 +87,7 @@ function vectorkong.startplugin()
 			-- highlight selected character during name registration
 			_y, _x = math.floor(read(0x6035) / 10) * -16 + 156, read(0x6035) % 10 * 16 + 36
 			draw_object("select", _y, _x, CYN)
-		elseif game_mode == 0x6 then
+		elseif game_mode == 0x06 then
 			-- restore basic block for title screen and display growling kong
 			vector_lib[0xb0] = vector_lib[0xfb0]
 			draw_kong(48, 92, true)
@@ -106,6 +106,7 @@ function vectorkong.startplugin()
 	function draw_girder_stage()
 		local _growling = game_mode == 0x16 and read(0x6388) >= 4
 		smashed = read(0x6352)
+		zigzags = true  -- display zig zag girders
 
 		-- 1st girder
 		draw_girder(1, 0, 1, 111, "R")  -- flat section
@@ -157,6 +158,7 @@ function vectorkong.startplugin()
 
 	function draw_rivet_stage()
 		-- Work in progress
+		zigzags = false
 		vector_lib[0xb0] = {}  -- clear basic block
 
 		-- 1st floor
@@ -194,6 +196,7 @@ function vectorkong.startplugin()
 		-- Pauline's floor
 		draw_girder(201, 56, 201, 168)
 		-- Sprites
+		draw_kong(168, 92)
 		draw_jumpman()
 		draw_fireballs()
 		draw_points()
@@ -214,17 +217,15 @@ function vectorkong.startplugin()
 		if data then
 			for _i=1, #data, 2 do
 				_datay, _datax = data[_i], data[_i+1]
-				if _savey then
-					if _savey ~= BR and _datay ~= BR then
-						if flip and flip > 0 then
-							vector(_datay+_offy, flip-_datax+_offx, _savey+_offy, flip-_savex+_offx)
-						else
-							vector(_datay+_offy, _datax+_offx, _savey+_offy, _savex+_offx)
-						end
+				if _savey and _savey ~= BR and _datay ~= BR then
+					if flip and flip > 0 then
+						vector(_datay+_offy, flip-_datax+_offx, _savey+_offy, flip-_savex+_offx)
 					else
-						-- break in the vector chain and maybe change colour
-						if _savex > 0x00ffffff then vector_color = _savex end
+						vector(_datay+_offy, _datax+_offx, _savey+_offy, _savex+_offx)
 					end
+				else
+					-- break in the vector chain and maybe change colour
+					if _datax > 0x00ffffff then vector_color = _datax end
 				end
 				_savey, _savex = _datay, _datax
 			end
@@ -269,8 +270,10 @@ function vectorkong.startplugin()
 		polyline({y1,x1,y2,x2,BR,BR,y1+7,x1,y2+7,x2})
 		if not open or open ~= "L" then	polyline({y1,x1,y1+7,x1}) end  -- close the girder ends
 		if not open or open ~= "R" then polyline({y2,x2,y2+7,x2}) end
-		for _x=x1, x2 - 1, 16 do  -- Fill the girders with zig zags
-			draw_object("zigzag", y1 + (((y2 - y1) / (x2 - x1)) * (_x - x1)), _x, GRY)
+		if zigzags then
+			for _x=x1, x2 - 1, 16 do  -- Fill the girders with zig zags
+				draw_object("zigzag", y1 + (((y2 - y1) / (x2 - x1)) * (_x - x1)), _x, GRY)
+			end
 		end
 	end
 
@@ -329,8 +332,8 @@ function vectorkong.startplugin()
 				else
 					_y, _x = 247 - read(_addr+5), read(_addr+3) - 22
 					if read(_addr+0xd, 1) then _flip = 13 end  -- fireball moving right so flip the vectors
-					draw_object("fball-1", _y, _x, YEL, _flip) -- draw body
-					draw_object("fball-2", _y+math.random(0,3), _x, RED, _flip) -- draw flames extending upwards
+					draw_object("fireball", _y, _x, YEL, _flip) -- draw body
+					draw_object("fb-flame", _y+math.random(0,3), _x, RED, _flip) -- draw flames extending upwards
 				end
 			end
 		end
@@ -398,13 +401,13 @@ function vectorkong.startplugin()
 
 	---- General functions
 	----------------------
-	function read(address, compare, compare2)
-		-- return data from memory address or boolean when the comparison or range of values are provided
+	function read(address, equal_from, to)
+		-- return data from memory address, or boolean when equal or to & from values are provided
 		_d = mem:read_u8(address)
-		if compare2 and compare then
-			return _d >= compare and _d <= compare2
-		elseif compare then
-			return _d == compare
+		if to and equal_from then
+			return _d >= equal_from and _d <= to
+		elseif equal_from then
+			return _d == equal_from
 		else
 			return _d
 		end
@@ -428,7 +431,9 @@ function vectorkong.startplugin()
 	---- Debugging functions
 	------------------------
 	function debug_vector_count()
-		mac:popmessage(tostring(vector_count).." vectors")
+		if scr:frame_number() % 60 == 0 then
+			mac:popmessage(tostring(vector_count).." vectors")
+		end
 	end
 
 	function debug_limits(limit)
@@ -538,9 +543,9 @@ function vectorkong.startplugin()
 		_lib[0x8b] = _lib[0x1d] --
 		_lib[0x9f] = {2,0,0,2,0,13,2,15,5,15,7,13,7,2,5,0,2,0,BR,BR,5,3,5,7,BR,BR,5,5,2,5,BR,BR,2,8,5,8,4,10,5,12,2,12} -- TM
 		_lib[0xb0] = {0,0,0,8,BR,BR,6,0,6,8} -- Basic block for title Screen
-		_lib[0xfb0] = {0,0,0,8,BR,BR,6,0,6,8} -- Copy of basic block
+		_lib[0xfb0] = _lib[0xb0] -- Copy of basic block
 		_lib[0xb1] = {0,0,7,0,7,7,0,7,0,0} -- Box
-		_lib[0xb7] = {0,0,1,0,1,1,6,1,6,0,7,0,7,6,6,6,6,5,1,5,1,6,0,6,0,0} -- Rivet
+		_lib[0xb7] = {BR,YEL,0,0,1,0,1,1,6,1,6,0,7,0,7,6,6,6,6,5,1,5,1,6,0,6,0,0} -- Rivet
 		_lib[0xdd] = {0,0,7,0,BR,BR,4,0,4,4,BR,BR,1,4,7,4,BR,BR,2,9,1,6,7,6,7,9,BR,BR,5,6,5,9,BR,BR,7,11,2,11,3,14,BR,BR,3,16,7,16,7,18,6,19,5,18,5,16,BR,BR,7,22,5,21,BR,BR,3,21,3,21} -- Help (big H)
 		_lib[0xed] = {7,1,5,1,BR,BR,6,1,6,5,BR,BR,7,5,4,5,BR,BR,7,10,7,7,4,7,3,10,BR,BR,5,7,5,10,BR,BR,7,12,3,12,2,15,BR,BR,1,17,7,17,7,20,3,20,3,17,BR,BR,7,23,2,22,BR,BR,0,21,0,22} -- Help (little H)
 		_lib[0xfb] = {5,1,6,2,6,5,5,6,4,6,2,3,BR,BR,0,3,1,4,BR,BR,1,3,0,4} -- question mark
@@ -573,10 +578,10 @@ function vectorkong.startplugin()
 		_lib["down"] = {2,0,7,0,9,3,9,12,7,15,2,15,0,12,0,3,2,0,BR,BR,1,1,8,1,BR,BR,1,14,8,14}  -- barrel going down ladder or crazy barrel
 		_lib["down-1"] = {3,3,3,12,BR,BR,6,3,6,12}
 		_lib["down-2"] = {2,3,2,12,BR,BR,7,3,7,12}
-		_lib["pauline"] = {14,11,1,12,4,0,10,7,15,6,15,7,13,9,14,11,BR,PNK,20,14,21,13,21,8,15,1,15,6,15,7,20,10,20,14,18,14,16,12,16,10,14,10,BR,BR,19,12,19,13,BR,BR,2,5,0,6,1,2,3,3,2,5,BR,BR,13,6,12,2,11,2,11,7,BR,BR,10,12,9,15,10,15,12,11,BR,BR,1,12,0,13,0,9,2,9,1,12}
+		_lib["pauline"] = {14,11,1,12,4,0,10,7,15,6,15,7,13,9,14,11,BR,BLU,10,7,9,12,BR,PNK,20,14,21,13,21,8,15,1,15,6,15,7,20,10,20,14,18,14,16,12,16,10,14,10,BR,BR,19,12,19,13,BR,BR,2,5,0,6,1,2,3,3,2,5,BR,BR,13,6,12,2,11,2,11,7,BR,BR,10,12,9,15,10,15,12,11,BR,BR,1,12,0,13,0,9,2,9,1,12}
 		_lib["hammer"] = {5,0,7,0,8,1,8,8,7,9,5,9,4,8,4,1,5,0,BR,BR,4,4,0,4,0,5,4,5,BR,BR,8,4,9,4,9,5,8,5}
-		_lib["fball-1"] = {12,2,5,0,3,0,1,1,0,3,0,8,1,10,3,11,6,12,11,13,9,10,13,12,10,9,15,11,10,7,13,8,10,5,14,7,9,3,12,2,BR,RED,6,3,7,4,6,5,5,4,6,3,BR,BR,6,6,7,7,6,8,5,7,6,6}
-		_lib["fball-2"] = {12,2,5,0,BR,BR,6,12,11,13,9,10,13,12,10,9,15,11,10,7,13,8,10,5,14,7,9,3,12,2}
+		_lib["fireball"] = {12,2,5,0,3,0,1,1,0,3,0,8,1,10,3,11,6,12,11,13,9,10,13,12,10,9,15,11,10,7,13,8,10,5,14,7,9,3,12,2,BR,RED,6,3,7,4,6,5,5,4,6,3,BR,BR,6,6,7,7,6,8,5,7,6,6}
+		_lib["fb-flame"] = {12,2,5,0,BR,BR,6,12,11,13,9,10,13,12,10,9,15,11,10,7,13,8,10,5,14,7,9,3,12,2}
 		_lib["dk-front"] = {27,13,25,13,25,15,28,15,29,16,30,18,30,19,29,20,BR,BR,31,20,31,17,27,13,BR,BR,25,20,25,18,24,18,24,20,BR,BR,21,15,22,16,22,20,BR,BR,26,18,27,18,27,19,26,19,26,18,BR,BR,6,20,6,16,2,12,BR,BR,2,4,4,4,5,3,7,3,11,7,13,7,13,4,16,1,19,1,23,6,24,8,24,10,BR,BR,7,15,8,14,10,14,BR,BR,19,6,17,10,16,13,BR,BR,10,13,11,10,BR,MBR,27,13,27,11,26,10,25,10,21,11,20,14,19,14,18,16,18,20,BR,BR,2,12,0,11,0,0,2,2,2,4,BR,BR,16,13,16,15,15,18,14,19,12,19,10,17,10,13,BR,BR,6,17,7,17,8,16,BR,BR,6,19,7,19,8,18,BR,BR,1,10,2,11,BR,BR,1,5,2,6,BR,BR,28,17,28,19,26,19,26,17,28,17,BR,LBR,26,18,27,18,27,19,26,19,26,18}
 		_lib["dk-side"] = {7,1,7,5,9,7,11,7,17,13,23,15,26,18,28,23,28,26,30,28,31,30,31,35,30,36,BR,BR,2,6,3,7,3,13,5,15,5,23,4,23,2,22,BR,BR,2,30,5,31,10,28,BR,BR,3,35,10,28,18,21,23,21,24,22,BR,BR,7,39,13,35,17,32,BR,BR,19,35,21,37,21,41,BR,BR,26,38,26,40,25,40,25,38,26,38,BR,BR,6,16,7,17,10,23,10,25,BR,BR,6,22,8,24,9,26,BR,BR,30,36,30,35,27,31,24,34,22,34,21,33,21,32,BR,MBR,7,1,1,1,0,2,0,8,2,6,BR,BR,5,2,5,3,BR,BR,1,2,2,3,BR,BR,2,22,0,22,0,34,2,32,2,30,BR,BR,1,24,2,24,BR,BR,1,29,2,28,BR,BR,3,35,0,39,0,41,1,42,2,42,4,40,5,40,6,42,7,42,7,39,BR,BR,17,32,17,36,18,39,21,42,22,42,24,41,25,40,BR,BR,26,38,30,36,BR,BR,21,32,23,30,25,30,26,29,26,28,25,27,24,27,20,31,17,32,BR,BR,28,36,28,34,26,34,26,36,28,36,BR,LBR,27,36,27,35,26,35,26,36,27,36}
 		_lib["dk-growl"] = {21,15,22,16,22,20,BR,BR,21,14,20,16,20,20,BR,LBR,21,16,21,18,BR,BR,22,17,20,17,BR,BR,21,19,21,20,BR,BR,22,20,20,20}
