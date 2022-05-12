@@ -19,7 +19,7 @@ local vectorkong = exports
 function vectorkong.startplugin()
 	local mame_version
 	local vector_count, vector_color
-	local game_mode, last_mode, smashed, zigzags
+	local game_mode, last_mode, smashed
 	local vector_lib = {}
 	local barrel_state = {}
 
@@ -106,7 +106,6 @@ function vectorkong.startplugin()
 	function draw_girder_stage()
 		local _growling = game_mode == 0x16 and read(0x6388) >= 4
 		smashed = read(0x6352)
-		zigzags = true  -- display zig zag girders
 
 		-- 1st girder
 		draw_girder(1, 0, 1, 111, "R")  -- flat section
@@ -158,7 +157,6 @@ function vectorkong.startplugin()
 
 	function draw_rivet_stage()
 		-- Work in progress
-		zigzags = false
 		vector_lib[0xb0] = {}  -- clear basic block
 
 		-- 1st floor
@@ -270,7 +268,7 @@ function vectorkong.startplugin()
 		polyline({y1,x1,y2,x2,BR,BR,y1+7,x1,y2+7,x2})
 		if not open or open ~= "L" then	polyline({y1,x1,y1+7,x1}) end  -- close the girder ends
 		if not open or open ~= "R" then polyline({y2,x2,y2+7,x2}) end
-		if zigzags then
+		if read(STAGE) == 1 then
 			for _x=x1, x2 - 1, 16 do  -- Fill the girders with zig zags
 				draw_object("zigzag", y1 + (((y2 - y1) / (x2 - x1)) * (_x - x1)), _x, GRY)
 			end
@@ -363,18 +361,19 @@ function vectorkong.startplugin()
 	function draw_kong(y, x, growl)
 		local _state = read(0x691d) -- state of kong - is he deploying a barrel?
 		local _data -- barrel data
+		local _active = read(0x6a20, 0)
 		if read(0x6382,0x80,0x81) then _data = {"skull-1",CYN,BLU} else _data = {"roll-1",LBR,MBR} end
-		if _state == 173 then
+		if _active and _state == 173 then
 			-- Kong releasing barrel to right
 			draw_object("dk-side", y, x+1, BRN)
 			draw_object("rolling", y, x+44, _data[2])
 			draw_object(_data[1], y, x+44, _data[3])
-		elseif _state == 45 then
+		elseif _active and _state == 45 then
 			-- Kong grabbing barrel from left (mirrored)
 			draw_object("dk-side", y, x-3, BRN, 42)
 			draw_object("rolling", y, x-15, _data[2])
 			draw_object(_data[1], y, x-15, _data[3])
-		elseif _state == 42 then
+		elseif _active and _state == 42 then
 			-- Kong front facing - holding a barrel
 			draw_object("dk-hold", y, x, BRN)  -- left side
 			draw_object("dk-hold", y, x+20, BRN, 20) -- mirrored right side
@@ -552,7 +551,7 @@ function vectorkong.startplugin()
 		_lib[0xfd] = {-1,0,8,0,BR,BR,-1,-1,8,-1} -- vertical line
 		_lib[0xfe] = {0,0,7,0,7,7,0,7,0,0} -- cross
 		_lib[0xff] = {5,2,7,2,7,4,5,4,5,2,BR,BR,5,3,2,3,0,1,BR,BR,2,3,0,5,BR,BR,4,0,3,1,3,5,4,6} -- jumpman / stick man
-		-- points
+		-- Bonus points
 		_lib[0xf7b] = {5,0,6,1,0,1,BR,BR,0,0,0,2,BR,BR,0,4,0,8,6,8,6,4,0,4,BR,BR,0,10,0,14,6,14,6,10,0,10}  -- 100 Points
 		_lib[0xf7d] = {0,0,0,4,2,4,3,1,6,4,6,0,BR,BR,0,6,0,9,6,9,6,6,0,6,BR,BR,0,11,0,14,6,14,6,11,0,11} -- 300 Points
 		_lib[0xf7e] = {1,0,0,1,0,3,1,4,3,4,4,0,6,0,6,4,BR,BR,0,6,0,9,6,9,6,6,0,6,BR,BR,0,11,0,14,6,14,6,11,0,11} -- 500 Points
@@ -560,7 +559,7 @@ function vectorkong.startplugin()
 		-- Love heart
 		_lib[0xf76] = {0,8,5,2,7,1,10,1,12,3,12,6,10,8,12,10,12,13,10,15,7,15,5,14,0,8}  -- full heart
 		_lib[0xf77] = {0,7,5,1,7,0,10,0,12,5,11,6,10,5,8,7,5,4,2,7,0,7,BR,BR,1,9,2,9,5,7,8,10,10,8,12,10,12,13,10,15,7,15,5,14,1,9} -- broken heart
-		-- non character objects:
+		-- Non-character objects:
 		_lib["select"] = {0,0,16,0,16,16,0,16,0,0}  -- selection box
 		_lib["zigzag"] = {3,4,4,8,3,12} -- zig zags for girders
 		_lib["oilcan"] = {1,1,15,1,BR,BR,1,15,15,15,BR,BR,5,1,5,15,BR,BR,12,1,12,15,BR,BR,7,4,10,4,10,7,7,7,7,4,BR,BR,7,9,10,9,BR,BR,7,13,7,11,10,11,BR,BR,15,0,16,0,16,16,15,16,15,0,BR,BR,1,0,0,0,0,16,1,16,1,0}
@@ -585,7 +584,7 @@ function vectorkong.startplugin()
 		_lib["dk-front"] = {31,20,31,17,27,13,25,13,25,15,28,15,29,16,30,18,30,19,29,20,BR,BR,25,20,25,18,24,18,24,20,BR,BR,21,15,22,16,22,20,BR,BR,26,18,27,18,27,19,26,19,26,18,BR,BR,6,20,6,16,2,12,BR,BR,2,4,4,4,5,3,7,3,11,7,13,7,13,4,16,1,19,1,23,6,24,8,24,10,BR,BR,7,15,8,14,10,14,BR,BR,19,6,17,10,16,13,BR,BR,10,13,11,10,BR,MBR,27,13,27,11,26,10,25,10,21,11,20,14,19,14,18,16,18,20,BR,BR,2,12,0,11,0,0,2,2,2,4,BR,BR,16,13,16,15,15,18,14,19,12,19,10,17,10,13,BR,BR,6,17,7,17,8,16,BR,BR,6,19,7,19,8,18,BR,BR,1,10,2,11,BR,BR,1,5,2,6,BR,BR,28,17,28,19,26,19,26,17,28,17,BR,LBR,26,18,27,18,27,19,26,19,26,18}
 		_lib["dk-hold"] = {31,20,31,17,27,13,25,13,25,15,28,15,29,16,30,18,30,19,29,20,BR,BR,25,20,25,18,24,18,24,20,BR,BR,21,15,22,16,22,20,BR,BR,26,18,27,18,27,19,26,19,26,18,BR,BR,2,4,4,4,5,3,7,3,11,1,14,0,17,0,21,1,26,6,26,8,25,10,BR,BR,7,3,4,6,BR,BR,15,11,17,10,15,8,11,8,BR,BR,11,12,11,16,13,18,15,18,16,17,16,12,15,11,12,11,11,12,BR,MBR,BR,BR,13,14,14,15,BR,BR,14,14,13,15,BR,BR,27,13,27,11,26,10,25,10,21,11,20,14,19,14,18,16,18,20,BR,BR,2,12,0,11,0,0,2,2,2,4,BR,BR,1,10,2,11,BR,BR,1,5,2,6,BR,BR,28,17,28,19,26,19,26,17,28,17,BR,BR,4,6,3,9,3,11,4,11,5,10,8,10,9,12,10,12,10,11,11,8,BR,LBR,26,18,27,18,27,19,26,19,26,18}
 		_lib["dk-side"] = {7,1,7,5,9,7,11,7,17,13,23,15,26,18,28,23,28,26,30,28,31,30,31,35,30,36,BR,BR,2,6,3,7,3,13,5,15,5,23,4,23,2,22,BR,BR,2,30,5,31,10,28,BR,BR,3,35,10,28,18,21,23,21,24,22,BR,BR,7,39,13,35,17,32,BR,BR,19,35,21,37,21,41,BR,BR,26,38,26,40,25,40,25,38,26,38,BR,BR,6,16,7,17,10,23,10,25,BR,BR,6,22,8,24,9,26,BR,BR,30,36,30,35,27,31,24,34,22,34,21,33,21,32,BR,MBR,7,1,1,1,0,2,0,8,2,6,BR,BR,5,2,5,3,BR,BR,1,2,2,3,BR,BR,2,22,0,22,0,34,2,32,2,30,BR,BR,1,24,2,24,BR,BR,1,29,2,28,BR,BR,3,35,0,39,0,41,1,42,2,42,4,40,5,40,6,42,7,42,7,39,BR,BR,17,32,17,36,18,39,21,42,22,42,24,41,25,40,BR,BR,26,38,30,36,BR,BR,21,32,23,30,25,30,26,29,26,28,25,27,24,27,20,31,17,32,BR,BR,28,36,28,34,26,34,26,36,28,36,BR,LBR,27,36,27,35,26,35,26,36,27,36}
-		_lib["dk-growl"] = {21,15,22,16,22,20,BR,BR,21,14,20,16,20,20,BR,LBR,21,16,21,18,BR,BR,22,17,20,17,BR,BR,21,19,21,20,BR,BR,22,20,20,20}
+		_lib["dk-growl"] = {22,20,22,16,23,15,23,14,22,13,20,14,19,17,19,20,BR,LBR,21,15,21,17,BR,BR,22,16,20,16,BR,BR,21,19,21,20,BR,BR,22,20,20,20}
 		return _lib
 	end
 
