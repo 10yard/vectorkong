@@ -350,37 +350,48 @@ function vectorkong.startplugin()
 
 	function draw_jumpman()
 		local _y, _x = 255 - read(0x6205), read(0x6203) - 15
-		----local _sprite = read(0x694d)
+		local _sprite = read(0x694d)
 		if _y < 255 then
-			vector_color = RED ; box(_y-7,_x-6,16,10)
-			vector_color = BLU ; polyline({-7,-6,9,4,BR,BR,9,-6,-7,4}, _y, _x)
-			vector_color = WHT
+			if _sprite <= 2 then
+				-- walking left 0,1,2
+				draw_object("jumpman", _y-7, _x-7, 0xff6060ff)
+			elseif _sprite >= 128 and _sprite <= 130 then
+				-- walking right 128,129,130
+				draw_object("jumpman", _y-7, _x, 0xff6060ff, 8)
+			else
+				-- other sprites
+				vector_color = RED ; box(_y-7,_x-6,16,10)
+				vector_color = BLU ; polyline({-7,-6,9,4,BR,BR,9,-6,-7,4}, _y, _x)
+				vector_color = WHT
+			end
 		end
 	end
 
 	function draw_kong(y, x, growl)
 		local _state = read(0x691d) -- state of kong - is he deploying a barrel?
-		local _data -- barrel data
-		local _active = read(0x6a20, 0)
-		if read(0x6382,0x80,0x81) then _data = {"skull-1",CYN,BLU} else _data = {"roll-1",LBR,MBR} end
-		if _active and _state == 173 then
-			-- Kong releasing barrel to right
-			draw_object("dk-side", y, x+1, BRN)
-			draw_object("rolling", y, x+44, _data[2])
-			draw_object(_data[1], y, x+44, _data[3])
-		elseif _active and _state == 45 then
-			-- Kong grabbing barrel from left (mirrored)
-			draw_object("dk-side", y, x-3, BRN, 42)
-			draw_object("rolling", y, x-15, _data[2])
-			draw_object(_data[1], y, x-15, _data[3])
-		elseif _active and _state == 42 then
-			-- Kong front facing - holding a barrel
-			draw_object("dk-hold", y, x, BRN)  -- left side
-			draw_object("dk-hold", y, x+20, BRN, 20) -- mirrored right side
-			draw_object("down", y+2, x+12.4, _data[2])
-			draw_object("down-1", y+2, x+12.4, _data[3])
+		local _data = {"roll-1", LBR, MBR} -- default barrel data
+		if read(0x6a20, 0) and (_state == 173 or _state == 45 or _state == 42) then
+			if read(0x6382,0x80,0x81) then _data = {"skull-1",CYN,BLU} end  -- blue barrel, not the default data
+			-- Kong deploying a barrel
+			if _state == 173 then
+				-- Releasing barrel to right
+				draw_object("dk-side", y, x+1, BRN)
+				draw_object("rolling", y, x+44, _data[2])
+				draw_object(_data[1], y, x+44, _data[3])
+			elseif _state == 45 then
+				-- Grabbing barrel from left (mirrored)
+				draw_object("dk-side", y, x-3, BRN, 42)
+				draw_object("rolling", y, x-15, _data[2])
+				draw_object(_data[1], y, x-15, _data[3])
+			elseif _state == 42 then
+				-- Holding barrel in front
+				draw_object("dk-hold", y, x, BRN)  -- left side
+				draw_object("dk-hold", y, x+20, BRN, 20) -- mirrored right side
+				draw_object("down", y+2, x+12.4, _data[2])
+				draw_object("down-1", y+2, x+12.4, _data[3])
+			end
 		else
-			-- Default Kong front facing
+			-- Default front facing Kong
 			draw_object("dk-front", y, x, BRN)  -- left side
 			draw_object("dk-front", y, x+20, BRN, 20) -- mirrored right side
 			if growl then
@@ -585,6 +596,7 @@ function vectorkong.startplugin()
 		_lib["dk-hold"] = {31,20,31,17,27,13,25,13,25,15,28,15,29,16,30,18,30,19,29,20,BR,BR,25,20,25,18,24,18,24,20,BR,BR,21,15,22,16,22,20,BR,BR,26,18,27,18,27,19,26,19,26,18,BR,BR,2,4,4,4,5,3,7,3,11,1,14,0,17,0,21,1,26,6,26,8,25,10,BR,BR,7,3,4,6,BR,BR,15,11,17,10,15,8,11,8,BR,BR,11,12,11,16,13,18,15,18,16,17,16,12,15,11,12,11,11,12,BR,MBR,BR,BR,13,14,14,15,BR,BR,14,14,13,15,BR,BR,27,13,27,11,26,10,25,10,21,11,20,14,19,14,18,16,18,20,BR,BR,2,12,0,11,0,0,2,2,2,4,BR,BR,1,10,2,11,BR,BR,1,5,2,6,BR,BR,28,17,28,19,26,19,26,17,28,17,BR,BR,4,6,3,9,3,11,4,11,5,10,8,10,9,12,10,12,10,11,11,8,BR,LBR,26,18,27,18,27,19,26,19,26,18}
 		_lib["dk-side"] = {7,1,7,5,9,7,11,7,17,13,23,15,26,18,28,23,28,26,30,28,31,30,31,35,30,36,BR,BR,2,6,3,7,3,13,5,15,5,23,4,23,2,22,BR,BR,2,30,5,31,10,28,BR,BR,3,35,10,28,18,21,23,21,24,22,BR,BR,7,39,13,35,17,32,BR,BR,19,35,21,37,21,41,BR,BR,26,38,26,40,25,40,25,38,26,38,BR,BR,6,16,7,17,10,23,10,25,BR,BR,6,22,8,24,9,26,BR,BR,30,36,30,35,27,31,24,34,22,34,21,33,21,32,BR,MBR,7,1,1,1,0,2,0,8,2,6,BR,BR,5,2,5,3,BR,BR,1,2,2,3,BR,BR,2,22,0,22,0,34,2,32,2,30,BR,BR,1,24,2,24,BR,BR,1,29,2,28,BR,BR,3,35,0,39,0,41,1,42,2,42,4,40,5,40,6,42,7,42,7,39,BR,BR,17,32,17,36,18,39,21,42,22,42,24,41,25,40,BR,BR,26,38,30,36,BR,BR,21,32,23,30,25,30,26,29,26,28,25,27,24,27,20,31,17,32,BR,BR,28,36,28,34,26,34,26,36,28,36,BR,LBR,27,36,27,35,26,35,26,36,27,36}
 		_lib["dk-growl"] = {22,20,22,16,23,15,23,14,22,13,20,14,19,17,19,20,BR,LBR,21,15,21,17,BR,BR,22,16,20,16,BR,BR,21,19,21,20,BR,BR,22,20,20,20}
+		_lib["jumpman"] = {1,5,0,4,0,7,1,7,1,5,BR,BR,01,10,0,9,0,12,1,12,1,10,BR,BR,10,3,11,3,11,6,10,6,10,3,BR,BR,13,6,13,7,12,7,12,6,13,6,BR,BR,14,8,11,8,11,9,12,10,12,11,10,11,10,13,14,11,BR,BR,9,10,7,12,5,12,3,10,BR,BR,7,9,6,10,5,9,BR,RED,14,4,14,11,15,10,15,7,14,4,BR,BR,6,9,7,8,7,5,5,4,3,4,1,5,BR,BR,1,7,3,8,1,10,BR,BR,5,12,1,12,BR,PNK,14,6,13,5,12,3,11,2,11,3,BR,BR,10,4,9,4,8,6,BR,BR,9,10,10,11,BR,BR,6,6,6,7,5,7,5,6,6,6,BR,BR,5,9,4,8,3,9,3,10}
 		return _lib
 	end
 
