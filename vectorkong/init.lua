@@ -27,7 +27,7 @@ function vectorkong.startplugin()
 	local MODE, STAGE, LEVEL = 0x600a, 0x6227, 0x6229
 	local VRAM_TR, VRAM_BL = 0x7440, 0x77bf  -- top-right and bottom-left bytes of video ram
 	local BLK, WHT, YEL, RED, BLU, MBR = 0xff000000, 0xffffffff, 0xfff0f050, 0xfff00000, 0xff0000f0, 0xe0f27713 -- color
-	local BRN, MAG, PNK, LBR, CYN, GRY = 0xffD60609, 0xfff057e8, 0xffffd1dc, 0xfff5bca0, 0xff14f3ff, 0xffb0b0b0
+	local BRN, MAG, PNK, LBR, CYN, GRY = 0xffD60609, 0xfff057e8, 0xffffd1dc, 0xfff4b98b, 0xff14f3ff, 0xffb0b0b0
 	local STACKED_BARRELS = {{173,0},{173,10},{189,0},{189,10}}
 	local BARRELS = {0x6700,0x6720,0x6740,0x6760,0x6780,0x67a0,0x67c0,0x67e0,0x6800,0x6820}
 	local FIREBALLS = {0x6400, 0x6420, 0x6440, 0x6460, 0x6480}
@@ -73,7 +73,7 @@ function vectorkong.startplugin()
 			draw_vector_characters()
 
 			--debug_limits(3000)
-			--debug_vector_count()
+			debug_vector_count()
 			last_mode = game_mode
 		end
 	end
@@ -94,7 +94,7 @@ function vectorkong.startplugin()
 		elseif game_mode == 0xa then
 			-- display multiple kongs on the how high can you get screen
 			_y, _x = 24, 92
-			for _i=1, mem:read_u8(0x622e) do
+			for _=1, mem:read_u8(0x622e) do
 				draw_kong(_y, _x)
 				_y = _y + 32
 			end
@@ -354,10 +354,10 @@ function vectorkong.startplugin()
 		if _y < 255 then
 			if _sprite <= 2 then
 				-- walking left 0,1,2
-				draw_object("jumpman", _y-7, _x-7, 0xff6060ff)
+				draw_object("jumpman", _y-7, _x-7, BLU)
 			elseif _sprite >= 128 and _sprite <= 130 then
 				-- walking right 128,129,130
-				draw_object("jumpman", _y-7, _x, 0xff6060ff, 8)
+				draw_object("jumpman", _y-7, _x, BLU, 8)
 			else
 				-- other sprites
 				vector_color = RED ; box(_y-7,_x-6,16,10)
@@ -596,7 +596,7 @@ function vectorkong.startplugin()
 		_lib["dk-hold"] = {31,20,31,17,27,13,25,13,25,15,28,15,29,16,30,18,30,19,29,20,BR,BR,25,20,25,18,24,18,24,20,BR,BR,21,15,22,16,22,20,BR,BR,26,18,27,18,27,19,26,19,26,18,BR,BR,2,4,4,4,5,3,7,3,11,1,14,0,17,0,21,1,26,6,26,8,25,10,BR,BR,7,3,4,6,BR,BR,15,11,17,10,15,8,11,8,BR,BR,11,12,11,16,13,18,15,18,16,17,16,12,15,11,12,11,11,12,BR,MBR,BR,BR,13,14,14,15,BR,BR,14,14,13,15,BR,BR,27,13,27,11,26,10,25,10,21,11,20,14,19,14,18,16,18,20,BR,BR,2,12,0,11,0,0,2,2,2,4,BR,BR,1,10,2,11,BR,BR,1,5,2,6,BR,BR,28,17,28,19,26,19,26,17,28,17,BR,BR,4,6,3,9,3,11,4,11,5,10,8,10,9,12,10,12,10,11,11,8,BR,LBR,26,18,27,18,27,19,26,19,26,18}
 		_lib["dk-side"] = {7,1,7,5,9,7,11,7,17,13,23,15,26,18,28,23,28,26,30,28,31,30,31,35,30,36,BR,BR,2,6,3,7,3,13,5,15,5,23,4,23,2,22,BR,BR,2,30,5,31,10,28,BR,BR,3,35,10,28,18,21,23,21,24,22,BR,BR,7,39,13,35,17,32,BR,BR,19,35,21,37,21,41,BR,BR,26,38,26,40,25,40,25,38,26,38,BR,BR,6,16,7,17,10,23,10,25,BR,BR,6,22,8,24,9,26,BR,BR,30,36,30,35,27,31,24,34,22,34,21,33,21,32,BR,MBR,7,1,1,1,0,2,0,8,2,6,BR,BR,5,2,5,3,BR,BR,1,2,2,3,BR,BR,2,22,0,22,0,34,2,32,2,30,BR,BR,1,24,2,24,BR,BR,1,29,2,28,BR,BR,3,35,0,39,0,41,1,42,2,42,4,40,5,40,6,42,7,42,7,39,BR,BR,17,32,17,36,18,39,21,42,22,42,24,41,25,40,BR,BR,26,38,30,36,BR,BR,21,32,23,30,25,30,26,29,26,28,25,27,24,27,20,31,17,32,BR,BR,28,36,28,34,26,34,26,36,28,36,BR,LBR,27,36,27,35,26,35,26,36,27,36}
 		_lib["dk-growl"] = {22,20,22,16,23,15,23,14,22,13,20,14,19,17,19,20,BR,LBR,21,15,21,17,BR,BR,22,16,20,16,BR,BR,21,19,21,20,BR,BR,22,20,20,20}
-		_lib["jumpman"] = {1,5,0,4,0,7,1,7,1,5,BR,BR,01,10,0,9,0,12,1,12,1,10,BR,BR,10,3,11,3,11,6,10,6,10,3,BR,BR,13,6,13,7,12,7,12,6,13,6,BR,BR,14,8,11,8,11,9,12,10,12,11,10,11,10,13,14,11,BR,BR,9,10,7,12,5,12,3,10,BR,BR,7,9,6,10,5,9,BR,RED,14,4,14,11,15,10,15,7,14,4,BR,BR,6,9,7,8,7,5,5,4,3,4,1,5,BR,BR,1,7,3,8,1,10,BR,BR,5,12,1,12,BR,PNK,14,6,13,5,12,3,11,2,11,3,BR,BR,10,4,9,4,8,6,BR,BR,9,10,10,11,BR,BR,6,6,6,7,5,7,5,6,6,6,BR,BR,5,9,4,8,3,9,3,10}
+		_lib["jumpman"] = {6,6,6,7,5,7,5,6,6,6,BR,BR,8,6,7,5,BR,BR,2,5,1,5,1,4,0,4,0,7,2,7,2,5,BR,BR,2,10,1,10,1,9,0,9,0,12,2,12,2,10,BR,BR,10,3,11,3,11,5,10,5,10,3,BR,BR,11,3,10,5,BR,BR,10,3,11,5,BR,BR,14,8,13,9,11,8,11,9,12,10,12,11,10,11,10,13,14,11,BR,BR,8,10,8,11,7,12,5,12,3,10,BR,BR,7,9,6,10,5,9,BR,RED,14,3,14,11,16,10,16,8,14,5,BR,BR,6,9,7,8,7,5,5,4,3,4,2,5,BR,BR,2,7,3,8,3,9,2,10,BR,BR,4,11,2,12,BR,GRY,14,6,13,5,12,3,11,2,11,3,10,4,9,4,8,6,BR,BR,8,10,10,11,BR,BR,5,9,4,8,3,9,3,10,BR,BR,13,6,13,7,12,7,12,6,13,6}
 		return _lib
 	end
 
