@@ -209,7 +209,7 @@ function vectorkong.startplugin()
 		vector_count = vector_count + 1
 	end
 
-	function polyline(data, offset_y, offset_x, flip)
+	function polyline(data, offset_y, offset_x, flip_x, flip_y)
 		-- draw multiple chained lines from a table of y,x points.  Optional offset for start y,x.
 		local _offy, _offx = offset_y or 0, offset_x or 0
 		local _savey, _savex, _datay, _datax
@@ -217,8 +217,10 @@ function vectorkong.startplugin()
 			for _i=1, #data, 2 do
 				_datay, _datax = data[_i], data[_i+1]
 				if _savey and _savey ~= BR and _datay ~= BR then
-					if flip and flip > 0 then
-						vector(_datay+_offy, flip-_datax+_offx, _savey+_offy, flip-_savex+_offx)
+					if flip_y and flip_y > 0 then
+						vector(flip_y-_datay+_offy, _datax+_offx, flip_y-_savey+_offy, _savex+_offx)
+					elseif flip_x and flip_x > 0 then
+						vector(_datay+_offy, flip_x-_datax+_offx, _savey+_offy, flip_x-_savex+_offx)
 					else
 						vector(_datay+_offy, _datax+_offx, _savey+_offy, _savex+_offx)
 					end
@@ -247,10 +249,10 @@ function vectorkong.startplugin()
 		end
 	end
 
-	function draw_object(name, y, x, color, flip)
+	function draw_object(name, y, x, color, flip_x, flip_y)
 		-- draw object from the vector library
 		vector_color = color or vector_color
-		polyline(vector_lib[name], y, x, flip)
+		polyline(vector_lib[name], y, x, flip_x, flip_y)
 		vector_color = WHT
 	end
 
@@ -354,7 +356,7 @@ function vectorkong.startplugin()
 		local _sprite = read(0x694d)
 		local _bright_blue = BLU + 0x1f1f0f
 
-		--print(_sprite)
+		print(_sprite)
 
 		if _y < 255 then
 			if vector_lib["jumpman-"..tostring(_sprite % 128)] then -- sprites are defined
@@ -364,8 +366,10 @@ function vectorkong.startplugin()
 				-- 14 jumping, 15 landing
 				if _sprite < 128 then
 					draw_object("jumpman-"..tostring(_sprite), _y-7, _x-7, _bright_blue)
+				elseif _sprite == 248 then
+					draw_object("jumpman-"..tostring(_sprite-128), _y, _x-7, _bright_blue, nil, 8)  -- flip y
 				else
-					draw_object("jumpman-"..tostring(_sprite-128), _y-7, _x, _bright_blue, 8)
+					draw_object("jumpman-"..tostring(_sprite-128), _y-7, _x, _bright_blue, 8)  -- flip x
 				end
 			else
 				-- other sprites
@@ -618,6 +622,8 @@ function vectorkong.startplugin()
 		_lib["jumpman-15"] = {10,4,11,4,11,6,10,6,10,4,BR,BR,11,4,10,6,BR,BR,10,4,11,6,BR,BR,14,9,13,10,11,9,11,10,12,11,12,12,10,12,10,14,14,12,BR,BR,9,11,9,13,7,16,6,16,BR,BR,6,12,7,13,6,14,BR,BR,7,3,8,4,9,6,9,8,BR,BR,5,4,6,5,7,7,7,8,BR,BR,2,1,3,2,2,3,3,4,1,5,0,3,2,1,BR,BR,2,6,3,7,2,8,3,9,1,10,0,8,2,6,BR,RED,14,4,14,12,16,11,16,9,14,6,BR,BR,3,4,4,5,6,6,7,8,7,10,6,12,3,13,1,10,BR,BR,1,5,2,6,BR,BR,3,9,4,10,BR,GRY,14,7,13,6,12,4,11,3,11,4,10,5,9,5,9,6,BR,BR,8,11,10,12,BR,BR,13,7,13,8,12,8,12,7,13,7,BR,BR,7,3,6,2,5,2,4,3,5,4,BR,BR,6,14,5,14,4,15,4,16,6,16,BR,BR,0,12,1,13,2,15,BR,BR,0,14,1,16}
 
 		_lib["jumpman-120"] = {14,4,10,2,10,4,BR,BR,12,4,14,6,BR,BR,14,11,10,13,10,11,BR,BR,12,11,14,9,BR,BR,11,4,11,6,10,7,10,8,11,9,11,11,10,10,10,9,9,8,9,7,10,6,10,5,11,4,BR,BR,9,5,8,4,9,2,BR,BR,9,10,8,11,9,13,BR,BR,6,4,6,3,8,1,BR,BR,6,11,6,12,8,14,BR,BR,6,5,6,6,5,6,5,5,6,5,BR,BR,6,9,6,10,5,10,5,9,6,9,BR,BR,4,3,2,5,1,4,2,1,3,1,4,3,BR,BR,2,10,4,12,3,13,3,14,2,14,1,11,2,10,BR,RED,14,3,14,12,BR,BR,14,4,15,5,15,10,14,11,BR,BR,4,3,6,4,7,5,8,5,8,6,7,6,6,7,6,8,7,9,8,9,8,10,7,10,6,11,4,12,BR,BR,2,5,3,7,3,8,2,10,BR,GRY,13,6,13,7,12,7,12,6,13,6,BR,BR,13,8,13,9,12,9,12,8,13,8,BR,BR,10,4,8,6,BR,BR,10,11,8,9,BR,BR,8,1,9,0,10,0,10,1,9,2,BR,BR,9,13,10,14,10,15,9,15,8,14,BR,BR,10,4,12,4,BR,BR,10,11,12,11}
+		_lib["jumpman-121"] = {10,2,11,1,14,2,14,3,13,3,12,4,10,2,BR,BR,5,2,3,4,2,3,1,3,1,2,4,1,5,2,BR,BR,10,5,10,6,9,6,9,5,10,5,BR,BR,6,5,6,6,5,6,5,5,6,5,BR,BR,11,6,12,6,14,8,BR,BR,10,9,11,8,13,9,BR,BR,4,6,3,6,1,8,BR,BR,5,9,4,8,2,9,BR,BR,11,10,13,10,11,14,BR,BR,4,10,2,10,4,14,BR,BR,11,12,9,14,BR,BR,6,14,4,12,BR,BR,11,11,9,11,8,10,7,10,6,11,4,11,5,10,6,10,7,9,8,9,9,10,10,10,11,11,BR,RED,12,14,3,14,BR,BR,11,14,10,15,5,15,4,14,BR,BR,12,4,11,6,10,7,10,8,9,8,9,7,8,6,7,6,6,7,6,8,5,8,5,7,4,6,3,4,BR,BR,10,2,8,3,7,3,5,2,BR,GRY,14,8,15,9,15,10,14,10,13,9,BR,BR,2,9,1,10,0,10,0,9,1,8,BR,BR,9,8,11,10,BR,BR,6,8,4,10,BR,BR,9,12,9,13,8,13,8,12,9,12,BR,BR,7,12,7,13,6,13,6,12,7,12}
+		_lib["jumpman-122"] = {10,2,12,3,11,7,10,7,10,6,9,5,10,2,BR,BR,6,4,6,5,5,5,5,4,6,4,BR,BR,2,2,2,5,4,7,3,8,2,8,0,6,0,0,1,0,2,2,BR,BR,6,10,6,11,3,11,3,10,6,10,BR,BR,6,10,3,11,BR,BR,6,11,3,10,BR,BR,0,14,0,9,1,8,1,11,2,11,1,13,2,14,BR,RED,0,14,8,14,BR,BR,0,14,1,16,3,16,6,14,BR,BR,14,8,15,9,15,13,14,14,12,14,11,13,11,9,12,8,14,8,BR,BR,10,2,9,1,7,1,6,0,4,0,3,1,2,1,BR,BR,9,5,8,4,7,4,6,7,5,8,BR,GRY,2,2,2,1,1,0,0,0,0,2,BR,BR,5,8,5,9,6,10,BR,BR,6,11,9,11,8,12,6,13,5,14,BR,BR,5,12,5,13,4,13,4,12,5,12}
 		return _lib
 	end
 
