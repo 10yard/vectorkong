@@ -354,15 +354,15 @@ function vectorkong.startplugin()
 	function draw_jumpman()
 		local _y, _x = 255 - read(0x6205), read(0x6203) - 15
 		local _sprite = read(0x694d)
+		local _sprite_mod = _sprite % 128
 		local _bright_blue = BLU + 0x1f1f0f
 
-		print(_sprite)
-
 		if _y < 255 then
-			if vector_lib["jumpman-"..tostring(_sprite % 128)] then -- sprites are defined
+			if vector_lib["jumpman-"..tostring(_sprite_mod)] then -- sprites are defined
 				-- sprites are mirrored: < 128 are left facing, >= 128 are right facing
 				-- 0,1,2 walking
 				-- 3,4,5,6 climbing
+				-- 8,9,10,11,12,13 - hammer smashing
 				-- 14 jumping, 15 landing
 				if _sprite < 128 then
 					draw_object("jumpman-"..tostring(_sprite), _y-7, _x-7, _bright_blue)
@@ -371,11 +371,20 @@ function vectorkong.startplugin()
 				else
 					draw_object("jumpman-"..tostring(_sprite-128), _y-7, _x, _bright_blue, 8)  -- flip x
 				end
-			else
-				-- other sprites
-				vector_color = RED ; box(_y-7,_x-6,16,10)
-				vector_color = BLU ; polyline({-7,-6,9,4,BR,BR,9,-6,-7,4}, _y, _x)
-				vector_color = WHT
+				-- hammer
+				if _sprite_mod >= 8 and _sprite_mod <= 13 then
+					if _sprite == 8 or _sprite == 10 then
+						draw_object("hammer", _y+9, _x-3, MBR)
+					elseif _sprite == 12 or _sprite == 140 then
+						draw_object("hammer", _y+9, _x-4, MBR)
+					elseif _sprite == 136 or _sprite == 138 then
+						draw_object("hammer", _y+9, _x-5, MBR)
+					elseif _sprite == 9 or _sprite == 11 or _sprite == 13 then
+						draw_object("hammer-lr", _y-4, _x-16, MBR)
+					elseif _sprite == 137 or _sprite == 139 or _sprite == 141 then
+						draw_object("hammer-lr", _y-4, _x+13, MBR, 4)
+					end
+				end
 			end
 		end
 	end
@@ -604,7 +613,7 @@ function vectorkong.startplugin()
 		_lib["pauline"] = {14,11,1,12,4,0,10,7,15,6,15,7,13,9,14,11,BR,BLU,10,7,9,12,BR,PNK,20,14,21,13,21,8,15,1,15,6,15,7,20,10,20,14,18,14,16,12,16,10,14,10,BR,BR,19,12,19,13,BR,BR,2,5,0,6,1,2,3,3,2,5,BR,BR,13,6,12,2,11,2,11,7,BR,BR,10,12,9,15,10,15,12,11,BR,BR,1,12,0,13,0,9,2,9,1,12}
 
 		_lib["hammer"] = {5,0,7,0,8,1,8,8,7,9,5,9,4,8,4,1,5,0,BR,BR,4,4,0,4,0,5,4,5,BR,BR,8,4,9,4,9,5,8,5}
-		_lib["hammer-lr"] = {8,1,9,2,9,4,8,5,1,5,0,4,0,2,1,2,1,1,8,1,BR,BR,5,1,5,0,4,0,4,1,BR,BR,5,5,5,9,4,9,4,5}
+		_lib["hammer-lr"] = {8,1,9,2,9,4,8,5,1,5,0,4,0,2,1,1,8,1,BR,BR,5,1,5,0,4,0,4,1,BR,BR,5,5,5,9,4,9,4,5}
 
 		_lib["fireball"] = {12,2,5,0,3,0,1,1,0,3,0,8,1,10,3,11,6,12,11,13,9,10,13,12,10,9,15,11,10,7,13,8,10,5,14,7,9,3,12,2,BR,RED,6,3,7,4,6,5,5,4,6,3,BR,BR,6,6,7,7,6,8,5,7,6,6}
 		_lib["fb-flame"] = {12,2,5,0,BR,BR,6,12,11,13,9,10,13,12,10,9,15,11,10,7,13,8,10,5,14,7,9,3,12,2}
