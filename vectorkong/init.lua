@@ -19,7 +19,7 @@ local vectorkong = exports
 function vectorkong.startplugin()
 	local mame_version
 	local vector_count, vector_color, vector_scale
-	local game_mode, last_mode, smashed
+	local game_mode, last_mode
 	local vector_lib = {}
 	local barrel_state = {}
 
@@ -106,7 +106,6 @@ function vectorkong.startplugin()
 	---------------------------
 	function draw_girder_stage()
 		local _growling = game_mode == 0x16 and read(0x6388) >= 4
-		smashed = read(0x6352)
 
 		-- 1st girder
 		draw_girder(1, 0, 1, 111, "R")  -- flat section
@@ -285,8 +284,8 @@ function vectorkong.startplugin()
 	end
 
 	function draw_hammers()
-		if read(0x6a18, 0x24) and read(0x6680, 1) then draw_object("hammer", 148,  17, MBR) end  -- top
-		if read(0x6a1c, 0xbb) and read(0x6690, 1) then draw_object("hammer", 56, 168, MBR) end -- bottom
+		if read(0x6a18, 0x24) and read(0x6680, 1) then draw_object("hammer-up", 148,  17, MBR) end  -- top
+		if read(0x6a1c, 0xbb) and read(0x6690, 1) then draw_object("hammer-up", 56, 168, MBR) end -- bottom
 	end
 
 	function draw_oilcan_and_flames(y, x)
@@ -302,12 +301,11 @@ function vectorkong.startplugin()
 	function draw_barrels()
 		local _y, _x, _type, _state
 		for _i, _addr in ipairs(BARRELS) do
-			if read(_addr) > 0 and read(0x6200, 1) and read(_addr+3) > 0 then  -- barrel active and Jumpman alive
+			if read(_addr) == 1 and read(0x6200, 1) and read(_addr+3) > 0 then  -- barrel active and Jumpman alive
 				_y, _x = 251 - read(_addr+5), read(_addr+3) - 20
 				_type = read(_addr+0x15) + 1 -- type of barrel: 1 is normal, 2 is blue/skull
-				if smashed == 0x67 and _i == read(0x6354) + 1 then -- this item was hit
-					write(_addr+3, 0)  -- clear barrel
-				elseif read(_addr+1, 1) or bits(read(_addr+2))[1] == 1 then -- barrel is crazy or going down a ladder
+
+				if read(_addr+1, 1) or bits(read(_addr+2))[1] == 1 then -- barrel is crazy or going down a ladder
 					_state = read(_addr+0xf)
 					draw_object("down", _y, _x-2, ({LBR, CYN})[_type])
 					draw_object("down-"..tostring(_state % 2 + 1), _y, _x - 2, ({MBR, BLU})[_type])
@@ -328,14 +326,10 @@ function vectorkong.startplugin()
 		local _y, _x, _flip
 		for _i, _addr in ipairs(FIREBALLS) do
 			if read(_addr, 1) then  -- fireball is active
-				if smashed == 0x64 and _i == read(0x6354) + 1 then -- fireball smashed
-					write(_addr+3, 0)  -- clear fireball
-				else
-					_y, _x = 247 - read(_addr+5), read(_addr+3) - 22
-					if read(_addr+0xd, 1) then _flip = 13 end  -- fireball moving right so flip the vectors
-					draw_object("fireball", _y, _x, YEL, _flip) -- draw body
-					draw_object("fb-flame", _y+math.random(0,3), _x, RED, _flip) -- draw flames extending upwards
-				end
+				_y, _x = 247 - read(_addr+5), read(_addr+3) - 22
+				if read(_addr+0xd, 1) then _flip = 13 end  -- fireball moving right so flip the vectors
+				draw_object("fireball", _y, _x, YEL, _flip) -- draw body
+				draw_object("fb-flame", _y+math.random(0,3), _x, RED, _flip) -- draw flames extending upwards
 			end
 		end
 	end
@@ -360,10 +354,11 @@ function vectorkong.startplugin()
 		if _y < 255 then
 			if vector_lib["jumpman-"..tostring(_sprite_mod)] then -- sprites are defined
 				-- sprites are mirrored: < 128 are left facing, >= 128 are right facing
-				-- 0,1,2 walking
-				-- 3,4,5,6 climbing
-				-- 8,9,10,11,12,13 - hammer smashing
-				-- 14 jumping, 15 landing
+				-- 0,1,2 = walking
+				-- 3,4,5,6 = climbing
+				-- 8,9,10,11,12,13 = hammer smashing
+				-- 14,15 = jumping
+				-- 120,121,122=dead
 				if _sprite < 128 then
 					draw_object("jumpman-"..tostring(_sprite), _y-7, _x-7, _bright_blue)
 				elseif _sprite == 248 then
@@ -371,18 +366,21 @@ function vectorkong.startplugin()
 				else
 					draw_object("jumpman-"..tostring(_sprite-128), _y-7, _x, _bright_blue, 8)  -- flip x
 				end
-				-- hammer
-				if _sprite_mod >= 8 and _sprite_mod <= 13 then
+				-- add hammer
+				if read(0x6218, 1) then -- jumping and grabbing hammer
+					draw_object("hammer-up", _y+9, _x-3, MBR)
+				end
+				if _sprite_mod >= 8 and _sprite_mod <= 13 then  -- using hammer
 					if _sprite == 8 or _sprite == 10 then
-						draw_object("hammer", _y+9, _x-3, MBR)
+						draw_object("hammer-up", _y+9, _x-3, MBR)
 					elseif _sprite == 12 or _sprite == 140 then
-						draw_object("hammer", _y+9, _x-4, MBR)
+						draw_object("hammer-up", _y+9, _x-4, MBR)
 					elseif _sprite == 136 or _sprite == 138 then
-						draw_object("hammer", _y+9, _x-5, MBR)
+						draw_object("hammer-up", _y+9, _x-5, MBR)
 					elseif _sprite == 9 or _sprite == 11 or _sprite == 13 then
-						draw_object("hammer-lr", _y-4, _x-16, MBR)
+						draw_object("hammer-down", _y-4, _x-16, MBR)
 					elseif _sprite == 137 or _sprite == 139 or _sprite == 141 then
-						draw_object("hammer-lr", _y-4, _x+13, MBR, 4)
+						draw_object("hammer-down", _y-4, _x+13, MBR, 4)
 					end
 				end
 			end
@@ -612,8 +610,8 @@ function vectorkong.startplugin()
 		_lib["down-2"] = {2,3,2,12,BR,BR,7,3,7,12}
 		_lib["pauline"] = {14,11,1,12,4,0,10,7,15,6,15,7,13,9,14,11,BR,BLU,10,7,9,12,BR,PNK,20,14,21,13,21,8,15,1,15,6,15,7,20,10,20,14,18,14,16,12,16,10,14,10,BR,BR,19,12,19,13,BR,BR,2,5,0,6,1,2,3,3,2,5,BR,BR,13,6,12,2,11,2,11,7,BR,BR,10,12,9,15,10,15,12,11,BR,BR,1,12,0,13,0,9,2,9,1,12}
 
-		_lib["hammer"] = {5,0,7,0,8,1,8,8,7,9,5,9,4,8,4,1,5,0,BR,BR,4,4,0,4,0,5,4,5,BR,BR,8,4,9,4,9,5,8,5}
-		_lib["hammer-lr"] = {8,1,9,2,9,4,8,5,1,5,0,4,0,2,1,1,8,1,BR,BR,5,1,5,0,4,0,4,1,BR,BR,5,5,5,9,4,9,4,5}
+		_lib["hammer-up"] = {5,0,7,0,8,1,8,8,7,9,5,9,4,8,4,1,5,0,BR,BR,4,4,0,4,0,5,4,5,BR,BR,8,4,9,4,9,5,8,5}
+		_lib["hammer-down"] = {8,1,9,2,9,4,8,5,1,5,0,4,0,2,1,1,8,1,BR,BR,5,1,5,0,4,0,4,1,BR,BR,5,5,5,9,4,9,4,5}
 
 		_lib["fireball"] = {12,2,5,0,3,0,1,1,0,3,0,8,1,10,3,11,6,12,11,13,9,10,13,12,10,9,15,11,10,7,13,8,10,5,14,7,9,3,12,2,BR,RED,6,3,7,4,6,5,5,4,6,3,BR,BR,6,6,7,7,6,8,5,7,6,6}
 		_lib["fb-flame"] = {12,2,5,0,BR,BR,6,12,11,13,9,10,13,12,10,9,15,11,10,7,13,8,10,5,14,7,9,3,12,2}
@@ -628,8 +626,6 @@ function vectorkong.startplugin()
 		_lib["jumpman-4"] = {15,6,13,6,14,5,12,2,11,1,10,1,10,2,11,4,BR,BR,15,11,13,11,14,12,13,14,10,14,BR,BR,6,4,6,7,5,7,5,3,6,4,BR,BR,3,7,3,10,2,11,2,7,3,7,BR,RED,15,6,15,11,14,10,14,7,15,6,BR,BR,6,4,8,2,9,2,11,4,12,6,13,6,13,7,12,7,11,8,11,9,12,10,13,10,13,11,12,11,11,13,10,14,7,14,3,10}
 		_lib["jumpman-5"] = {7,1,7,5,6,5,6,1,7,1,BR,BR,3,7,3,10,2,11,2,7,3,7,BR,BR,11,12,9,14,7,15,6,15,BR,RED,7,1,8,0,9,0,11,2,12,4,12,6,11,7,11,8,12,9,12,10,11,12,9,13,5,13,3,10,BR,BR,3,7,5,9,6,9,7,7,7,5,BR,GRY,6,13,5,14,5,15,6,15}
 		_lib["jumpman-6"] = {14,5,13,4,10,4,9,6,9,9,10,11,13,11,14,10,BR,BR,5,1,7,1,9,3,9,5,BR,BR,9,10,9,12,7,14,4,14,BR,BR,0,3,0,7,1,7,1,4,0,3,BR,BR,1,8,0,8,0,12,1,11,1,8,BR,RED,15,5,15,10,14,10,13,9,13,6,14,5,15,5,BR,BR,1,7,2,6,3,7,3,8,2,9,1,8,BR,BR,1,4,2,3,6,3,8,5,9,5,9,6,6,6,5,7,5,8,6,9,9,9,9,10,8,10,6,12,2,12,1,11,BR,GRY,5,1,4,1,4,2,5,3,BR,BR,5,12,4,13,4,14,5,14}
-
-		--_lib["jumpman-9-topbit"] = {11,3,11,5,10,5,10,3,11,3,BR,BR,11,3,10,5,BR,BR,10,3,11,5,BR,BR,14,8,13,9,11,8,11,9,12,10,12,11,10,11,10,13,14,11,BR,BR,8,2,8,10,7,11,6,10,6,2,BR,RED,14,3,14,11,16,10,16,8,14,5,BR,GRY,13,6,13,7,12,7,12,6,13,6,BR,BR,14,6,13,5,12,3,11,2,11,3,BR,BR,10,4,9,4,8,5,BR,BR,8,10,10,10,BR,BR,8,2,8,0,7,0,6,2}
 		_lib["jumpman-8"] = {11,3,11,5,10,5,10,3,11,3,BR,BR,10,3,11,5,BR,BR,11,3,10,5,BR,BR,14,11,10,13,10,10,12,11,12,9,BR,BR,14,7,9,7,7,9,6,11,7,12,8,11,9,9,14,9,BR,BR,8,6,7,5,BR,RED,16,9,16,10,14,11,14,9,BR,BR,14,3,14,7,BR,BR,14,5,16,8,BR,GRY,14,7,16,8,16,9,14,9,BR,BR,13,6,13,7,12,7,12,6,13,6,BR,BR,14,6,13,5,12,3,11,2,BR,BR,10,4,9,4,8,6,BR,BR,10,10,9,10,BR,RED,7,9,7,5,5,4,3,4,2,5,BR,BR,7,12,2,12,BR,BR,2,7,3,8,3,9,2,10,BR,BLU,6,6,6,7,5,7,5,6,6,6,BR,BR,2,5,2,7,0,7,0,4,1,4,1,5,2,5,BR,BR,2,10,2,12,0,12,0,9,1,9,1,10,2,10}
 		_lib["jumpman-9"] = {11,3,11,5,10,5,10,3,11,3,BR,BR,11,3,10,5,BR,BR,10,3,11,5,BR,BR,14,8,13,9,11,8,11,9,12,10,12,11,10,11,10,13,14,11,BR,BR,8,2,8,10,7,11,6,10,6,2,BR,RED,14,3,14,11,16,10,16,8,14,5,BR,GRY,13,6,13,7,12,7,12,6,13,6,BR,BR,14,6,13,5,12,3,11,2,11,3,BR,BR,10,4,9,4,8,5,BR,BR,8,10,10,10,BR,BR,8,2,8,0,7,0,6,2,BR,RED,6,4,3,4,2,5,BR,BR,2,7,3,8,3,9,2,10,BR,BR,2,12,5,11,7,11,BR,BLU,6,6,5,6,5,7,6,7,BR,BR,2,5,2,7,0,7,0,4,1,4,1,5,2,5,BR,BR,2,10,2,12,0,12,0,9,1,9,1,10,2,10}
 		_lib["jumpman-10"] = {11,3,11,5,10,5,10,3,11,3,BR,BR,10,3,11,5,BR,BR,11,3,10,5,BR,BR,14,11,10,13,10,10,12,11,12,9,BR,BR,14,7,9,7,7,9,6,11,7,12,8,11,9,9,14,9,BR,BR,8,6,7,5,BR,RED,16,9,16,10,14,11,14,9,BR,BR,14,3,14,7,BR,BR,14,5,16,8,BR,GRY,14,7,16,8,16,9,14,9,BR,BR,13,6,13,7,12,7,12,6,13,6,BR,BR,14,6,13,5,12,3,11,2,BR,BR,10,4,9,4,8,6,BR,BR,10,10,9,10,BR,RED,7,9,7,5,4,4,BR,BR,2,4,3,7,3,8,2,11,BR,BR,7,12,5,11,3,13,BR,BLU,4,4,4,3,5,3,5,2,2,2,2,4,4,4,BR,BR,2,11,3,13,2,14,0,13,0,12,1,12,2,11,BR,BR,6,6,6,7,5,7,5,6,6,6}
@@ -638,10 +634,9 @@ function vectorkong.startplugin()
 		_lib["jumpman-13"] = {11,2,11,4,10,4,10,2,11,2,BR,BR,11,2,10,4,BR,BR,10,2,11,4,BR,BR,14,7,13,8,11,7,11,8,12,9,12,10,10,10,10,12,14,10,BR,BR,8,2,8,10,7,11,6,10,6,2,BR,RED,14,2,14,10,16,9,16,7,14,4,BR,GRY,13,5,13,6,12,6,12,5,13,5,BR,BR,14,5,13,4,12,2,11,1,11,2,BR,BR,10,3,9,3,8,4,BR,BR,8,10,10,10,BR,BR,8,2,8,0,7,0,6,2,BR,RED,6,4,4,4,2,6,BR,BR,2,8,3,8,3,9,2,13,BR,BR,4,13,6,11,7,11,BR,BLU,6,6,5,6,5,7,6,7,BR,BR,2,6,1,6,1,5,0,5,0,8,2,8,2,6,BR,BR,4,13,4,15,1,15,1,14,2,14,2,13,4,13}
 		_lib["jumpman-14"] = {9,3,10,3,10,5,9,5,9,3,BR,BR,10,3,9,5,BR,BR,9,3,10,5,BR,BR,13,8,12,9,10,8,10,9,11,10,11,11,9,11,9,13,13,11,BR,BR,1,1,4,1,4,2,3,2,3,3,1,3,1,1,BR,BR,3,12,5,13,3,15,2,15,3,14,2,13,3,12,BR,BR,7,3,7,6,BR,BR,5,2,5,5,BR,BR,7,10,8,13,BR,BR,5,11,6,14,BR,BR,5,7,5,8,4,8,4,7,5,7,BR,RED,13,3,13,11,15,10,15,8,13,5,BR,BR,3,3,6,6,6,9,5,11,3,11,3,12,BR,BR,1,3,2,7,2,8,0,10,0,11,2,13,BR,GRY,13,6,12,5,11,3,10,2,10,3,9,4,8,4,7,6,BR,BR,7,10,9,11,BR,BR,12,6,12,7,11,7,11,6,12,6,BR,BR,7,3,7,1,6,1,5,2,BR,BR,8,13,8,15,7,15,6,14}
 		_lib["jumpman-15"] = {10,4,11,4,11,6,10,6,10,4,BR,BR,11,4,10,6,BR,BR,10,4,11,6,BR,BR,14,9,13,10,11,9,11,10,12,11,12,12,10,12,10,14,14,12,BR,BR,9,11,9,13,7,16,6,16,BR,BR,6,12,7,13,6,14,BR,BR,7,3,8,4,9,6,9,8,BR,BR,5,4,6,5,7,7,7,8,BR,BR,2,1,3,2,2,3,3,4,1,5,0,3,2,1,BR,BR,2,6,3,7,2,8,3,9,1,10,0,8,2,6,BR,RED,14,4,14,12,16,11,16,9,14,6,BR,BR,3,4,4,5,6,6,7,8,7,10,6,12,3,13,1,10,BR,BR,1,5,2,6,BR,BR,3,9,4,10,BR,GRY,14,7,13,6,12,4,11,3,11,4,10,5,9,5,9,6,BR,BR,8,11,10,12,BR,BR,13,7,13,8,12,8,12,7,13,7,BR,BR,7,3,6,2,5,2,4,3,5,4,BR,BR,6,14,5,14,4,15,4,16,6,16,BR,BR,0,12,1,13,2,15,BR,BR,0,14,1,16}
-
 		_lib["jumpman-120"] = {14,4,10,2,10,4,BR,BR,12,4,14,6,BR,BR,14,11,10,13,10,11,BR,BR,12,11,14,9,BR,BR,11,4,11,6,10,7,10,8,11,9,11,11,10,10,10,9,9,8,9,7,10,6,10,5,11,4,BR,BR,9,5,8,4,9,2,BR,BR,9,10,8,11,9,13,BR,BR,6,4,6,3,8,1,BR,BR,6,11,6,12,8,14,BR,BR,6,5,6,6,5,6,5,5,6,5,BR,BR,6,9,6,10,5,10,5,9,6,9,BR,BR,4,3,2,5,1,4,2,1,3,1,4,3,BR,BR,2,10,4,12,3,13,3,14,2,14,1,11,2,10,BR,RED,14,3,14,12,BR,BR,14,4,15,5,15,10,14,11,BR,BR,4,3,6,4,7,5,8,5,8,6,7,6,6,7,6,8,7,9,8,9,8,10,7,10,6,11,4,12,BR,BR,2,5,3,7,3,8,2,10,BR,GRY,13,6,13,7,12,7,12,6,13,6,BR,BR,13,8,13,9,12,9,12,8,13,8,BR,BR,10,4,8,6,BR,BR,10,11,8,9,BR,BR,8,1,9,0,10,0,10,1,9,2,BR,BR,9,13,10,14,10,15,9,15,8,14,BR,BR,10,4,12,4,BR,BR,10,11,12,11}
 		_lib["jumpman-121"] = {10,2,11,1,14,2,14,3,13,3,12,4,10,2,BR,BR,5,2,3,4,2,3,1,3,1,2,4,1,5,2,BR,BR,10,5,10,6,9,6,9,5,10,5,BR,BR,6,5,6,6,5,6,5,5,6,5,BR,BR,11,6,12,6,14,8,BR,BR,10,9,11,8,13,9,BR,BR,4,6,3,6,1,8,BR,BR,5,9,4,8,2,9,BR,BR,11,10,13,10,11,14,BR,BR,4,10,2,10,4,14,BR,BR,11,12,9,14,BR,BR,6,14,4,12,BR,BR,11,11,9,11,8,10,7,10,6,11,4,11,5,10,6,10,7,9,8,9,9,10,10,10,11,11,BR,RED,12,14,3,14,BR,BR,11,14,10,15,5,15,4,14,BR,BR,12,4,11,6,10,7,10,8,9,8,9,7,8,6,7,6,6,7,6,8,5,8,5,7,4,6,3,4,BR,BR,10,2,8,3,7,3,5,2,BR,GRY,14,8,15,9,15,10,14,10,13,9,BR,BR,2,9,1,10,0,10,0,9,1,8,BR,BR,9,8,11,10,BR,BR,6,8,4,10,BR,BR,9,12,9,13,8,13,8,12,9,12,BR,BR,7,12,7,13,6,13,6,12,7,12}
-		_lib["jumpman-122"] = {10,2,12,3,11,7,10,7,10,6,9,5,10,2,BR,BR,6,4,6,5,5,5,5,4,6,4,BR,BR,2,2,2,5,4,7,3,8,2,8,0,6,0,0,1,0,2,2,BR,BR,6,10,6,11,3,11,3,10,6,10,BR,BR,6,10,3,11,BR,BR,6,11,3,10,BR,BR,0,14,0,9,1,8,1,11,2,11,1,13,2,14,BR,RED,0,14,8,14,BR,BR,0,14,1,16,3,16,6,14,BR,BR,14,8,15,9,15,13,14,14,12,14,11,13,11,9,12,8,14,8,BR,BR,10,2,9,1,7,1,6,0,4,0,3,1,2,1,BR,BR,9,5,8,4,7,4,6,7,5,8,BR,GRY,2,2,2,1,1,0,0,0,0,2,BR,BR,5,8,5,9,6,10,BR,BR,6,11,9,11,8,12,6,13,5,14,BR,BR,5,12,5,13,4,13,4,12,5,12}
+		_lib["jumpman-122"] = {10,2,12,3,11,7,10,7,10,6,9,5,10,2,BR,BR,6,4,6,5,5,5,5,4,6,4,BR,BR,2,2,2,5,4,7,3,8,2,8,0,6,0,0,1,0,2,2,BR,BR,8,10,8,11,5,11,5,10,8,10,BR,BR,8,10,5,11,BR,BR,8,11,5,10,BR,BR,0,14,0,9,1,8,1,11,2,11,1,13,2,14,BR,RED,0,14,8,14,BR,BR,0,14,1,16,3,16,6,14,BR,BR,14,8,15,9,15,13,14,14,12,14,11,13,11,9,12,8,14,8,BR,BR,10,2,9,1,7,1,6,0,4,0,3,1,2,1,BR,BR,9,5,8,4,7,4,6,7,5,8,BR,GRY,2,2,2,1,1,0,0,0,0,2,BR,BR,5,8,5,9,6,10,BR,BR,8,11,9,11,8,12,6,13,5,14,BR,BR,5,12,5,13,4,13,4,12,5,12}
 		return _lib
 	end
 
