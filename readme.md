@@ -8,7 +8,7 @@ My plan is to use the simple vector drawing capabilities of MAME LUA scripting l
 ![VectorKong Plugin Screenshot](https://i.imgur.com/BnjPCD9.gif)
 
 
-Tested with latest MAME version 0.243
+Tested with latest MAME version 0.244
 
 Compatible with all MAME versions from 0.196
 
