@@ -34,24 +34,26 @@ function vectorkong.startplugin()
 	local BR = 0xffff  -- instuction to break in a vector chain
 
 	function initialize()
-		mame_version = tonumber(emu.app_version())
-		if mame_version >= 0.196 then
-			if type(manager.machine) == "userdata" then
-				mac = manager.machine
-				bnk = mac.memory
+		if emu.romname() == "dkong" then
+			mame_version = tonumber(emu.app_version())
+			if  mame_version >= 0.196 then
+				if type(manager.machine) == "userdata" then
+					mac = manager.machine
+					bnk = mac.memory
+				else
+					mac = manager:machine()
+					bnk = mac:memory()
+				end
 			else
-				mac = manager:machine()
-				bnk = mac:memory()
+				print("ERROR: The vectorkong plugin requires MAME version 0.196 or greater.")
 			end
-		else
-			print("ERROR: The vectorkong plugin requires MAME version 0.196 or greater.")
 		end
 		if mac ~= nil then
 			scr = mac.screens[":screen"]
 			cpu = mac.devices[":maincpu"]
 			mem = cpu.spaces["program"]
+			clear_graphic_banks()
 		end
-		clear_graphic_banks()
 		vector_lib = load_vector_library()
 	end
 
