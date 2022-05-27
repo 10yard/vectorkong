@@ -10,7 +10,7 @@
 
 local exports = {}
 exports.name = "vectorkong"
-exports.version = "0.1"
+exports.version = "0.11"
 exports.description = "Vector Kong"
 exports.license = "GNU GPLv3"
 exports.author = { name = "Jon Wilson (10yard)" }
