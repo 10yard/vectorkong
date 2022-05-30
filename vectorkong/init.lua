@@ -186,10 +186,10 @@ function vectorkong.startplugin()
 
 	function screen_specific_changes()
 		local _y, _x
-		if scr:frame_number() < 180 and read(0x6001, 0) then
-			-- Launch with the logo screen for 3 seconds (unless coin is inserted)
-			write(MODE, 0x06)
-		end
+		--if scr:frame_number() < 180 and read(0x6001, 0) then
+		--	-- Launch with the logo screen for 3 seconds (unless coin is inserted)
+		--	write(MODE, 0x06)
+		--end
 		if game_mode == 0x10 then
 			-- emphasise the game over message
 			scr:draw_box(64, 64, 88, 160, BLK, BLK)
