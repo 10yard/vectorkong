@@ -81,30 +81,6 @@ function vectorkong.startplugin()
 		end
 	end
 
-	function screen_specific_changes()
-		local _y, _x
-		print(game_mode)
-		if game_mode == 0x10 then
-			-- emphasise the game over message
-			scr:draw_box(64, 64, 88, 160, BLK, BLK)
-		elseif game_mode == 0x15 then
-			-- highlight selected character during name registration
-			_y, _x = math.floor(read(0x6035) / 10) * -16 + 156, read(0x6035) % 10 * 16 + 36
-			draw_object("select", _y, _x, CYN)
-		elseif game_mode == 0x06 then
-			-- restore basic block for title screen and display growling kong
-			vector_lib[0xb0] = vector_lib[0xfb0]
-			draw_kong(48, 92, true)
-		elseif game_mode == 0xa then
-			-- display multiple kongs on the how high can you get screen
-			_y, _x = 24, 92
-			for _=1, mem:read_u8(0x622e) do
-				draw_kong(_y, _x)
-				_y = _y + 32
-			end
-		end
-	end
-
 	---- Draw stage backgrounds
 	---------------------------
 	function draw_girder_stage()
@@ -206,6 +182,37 @@ function vectorkong.startplugin()
 		draw_jumpman()
 		draw_fireballs()
 		draw_points()
+	end
+
+	function screen_specific_changes()
+		local _y, _x
+		if scr:frame_number() < 180 and read(0x6001, 0) then
+			-- Launch with the logo screen for 3 seconds (unless coin is inserted)
+			write(MODE, 0x06)
+		end
+		if game_mode == 0x10 then
+			-- emphasise the game over message
+			scr:draw_box(64, 64, 88, 160, BLK, BLK)
+		elseif game_mode == 0x15 then
+			-- highlight selected character during name registration
+			_y, _x = math.floor(read(0x6035) / 10) * -16 + 156, read(0x6035) % 10 * 16 + 36
+			draw_object("select", _y, _x, CYN)
+		elseif game_mode == 0x06 then
+			-- restore basic block for title screen and display growling kong
+			vector_lib[0xb0] = vector_lib[0xfb0]
+			draw_kong(48, 92, true)
+			-- display "vectoristation by 10yard" in the footer
+			for _k, _v in ipairs({0x26,0x15,0x13,0x24,0x1f,0x22,0x19,0x23,0x11,0x24,0x19,0x1f,0x1e,0x10,0x12,0x29,0x10,0x01,0x00,0x29,0x11,0x22,0x14}) do
+				draw_object(_v, 7, _k*8+8, 0xff000000+math.random(0xffffff))
+			end
+		elseif game_mode == 0xa then
+			-- display multiple kongs on the how high can you get screen
+			_y, _x = 24, 92
+			for _=1, mem:read_u8(0x622e) do
+				draw_kong(_y, _x)
+				_y = _y + 32
+			end
+		end
 	end
 
 	---- Basic vector drawing functions
@@ -533,8 +540,9 @@ function vectorkong.startplugin()
 		_lib[0x07] = {6,0,6,6,0,2} -- 7
 		_lib[0x08] = {2,0,0,1,0,5,2,6,5,0,6,1,6,4,5,5,2,0} -- 8
 		_lib[0x09] = {0,1,0,4,2,6,5,6,6,5,6,1,5,0,4,0,3,1,3,6} -- 9
+		_lib[0x10] = {} -- space
 		_lib[0x11] = {0,0,4,0,6,3,4,6,0,6,BR,BR,2,6,2,0}  -- A
-		_lib[0x12] = {0,0,6,0,6,5,5,6,4,6,3,5,2,6,1,6,0,5,0,0,BR,BR,3,0,3,4}  -- B
+		_lib[0x12] = {0,0,6,0,6,5,5,6,4,6,3,5,2,6,1,6,0,5,0,0,BR,BR,3,0,3,5}  -- B
 		_lib[0x13] = {1,6,0,5,0,2,2,0,4,0,6,2,6,5,5,6} -- C
 		_lib[0x14] = {0,0,6,0,6,4,4,6,2,6,0,4,0,0} -- D
 		_lib[0x15] = {0,5,0,0,6,0,6,5,BR,BR,3,0,3,4} -- E
@@ -597,7 +605,7 @@ function vectorkong.startplugin()
 		_lib[0x8a] = _lib[0x1d] -- Alternative M's
 		_lib[0x8b] = _lib[0x1d] --
 		_lib[0x9f] = {2,0,0,2,0,13,2,15,5,15,7,13,7,2,5,0,2,0,BR,BR,5,3,5,7,BR,BR,5,5,2,5,BR,BR,2,8,5,8,4,10,5,12,2,12} -- TM
-		_lib[0xb0] = {0,0,0,8,BR,BR,6,0,6,8} -- Basic block for title Screen
+		_lib[0xb0] = {BR,CYN,0,0,0,8,BR,BR,6,0,6,8} -- Basic block for title Screen
 		_lib[0xfb0] = _lib[0xb0] -- Copy of basic block
 		_lib[0xb1] = {0,0,7,0,7,7,0,7,0,0} -- Box
 		_lib[0xb7] = {BR,YEL,0,0,1,0,1,1,6,1,6,0,7,0,7,6,6,6,6,5,1,5,1,6,0,6,0,0} -- Rivet
