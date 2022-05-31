@@ -10,7 +10,7 @@
 
 local exports = {}
 exports.name = "vectorkong"
-exports.version = "0.11"
+exports.version = "0.12"
 exports.description = "Vector Kong"
 exports.license = "GNU GPLv3"
 exports.author = { name = "Jon Wilson (10yard)" }
@@ -18,7 +18,7 @@ local vectorkong = exports
 
 function vectorkong.startplugin()
 	local mame_version
-	local vector_count, vector_color, vector_scale
+	local vector_count, vector_color
 	local game_mode, last_mode, zigzags
 	local vector_lib = {}
 	local barrel_state = {}
@@ -53,26 +53,22 @@ function vectorkong.startplugin()
 			cpu = mac.devices[":maincpu"]
 			mem = cpu.spaces["program"]
 			clear_graphic_banks()
+			mem:write_direct_u32(0x01ea, 0x0000063e) -- force game to start on the title screen
+			mem:write_direct_u16(0x07d3, 0xff3e)     -- increase timer for title screen
 		end
 		vector_lib = load_vector_library()
+		zigzags = true
 	end
 
 	function main()
 		if cpu ~= nil then
 			vector_count = 0
-			vector_scale = 1
 			vector_color = WHT
 			game_mode = read(MODE)
 
-			-- skip the intro scene and stay on girders stage
-			if game_mode == 0x07 then write(MODE, 0x08) end
-			if game_mode == 0x08 and last_mode == 0x16 then debug_stay_on_girders() end
-
-			-- handle stage backgrounds
 			if read(VRAM_BL, 0xf0) then draw_girder_stage() end
 			--if read(VRAM_BL, 0xb0) then draw_rivet_stage() end
-
-			screen_specific_changes()
+			mode_specific_changes()
 			draw_vector_characters()
 
 			--debug_limits(3000)
@@ -85,7 +81,6 @@ function vectorkong.startplugin()
 	---------------------------
 	function draw_girder_stage()
 		local _growling = game_mode == 0x16 and read(0x6388) >= 4
-		zigzags = true
 
 		-- 1st girder
 		draw_girder(1, 0, 1, 111, "R")  -- flat section
@@ -126,85 +121,93 @@ function vectorkong.startplugin()
 		draw_girder(193, 88, 193, 136, "L")
 		draw_pauline(90)
 		draw_loveheart()
+
 		-- Other sprites
-		draw_hammers(56,168,148,17)
 		draw_kong(172, 24, _growling)
+		draw_hammers(56,168,148,17)
 		draw_jumpman()
 		draw_barrels()
 		draw_fireballs()
 		draw_points()
 	end
 
-	function draw_rivet_stage()
-		-- Work in progress
-		vector_lib[0xb0] = {BR,GRY,3,2,3,4,4,4,4,2,3,2}  -- update basic block
-		zigzags = false
+	--function draw_rivet_stage()
+	--	-- Work in progress
+	--	vector_lib[0xb0] = {BR,GRY,3,2,3,4,4,4,4,2,3,2}  -- update basic block
+	--	zigzags = false
+	--
+	--	-- 1st floor
+	--	draw_girder(1, 0, 1, 223)
+	--	draw_ladder(8, 8, 33) -- left ladder
+	--	draw_ladder(8, 104, 33) -- middle ladder
+	--	draw_ladder(8, 208, 33) -- right ladder
+	--	-- 2nd floor
+	--	draw_girder(41, 8, 41, 56)
+	--	draw_girder(41, 64, 41, 160)
+	--	draw_girder(41, 168, 41, 216)
+	--	draw_ladder(48, 16, 33) -- ladder 1
+	--	draw_ladder(48, 72, 33) -- ladder 2
+	--	draw_ladder(48, 144, 33) -- ladder 3
+	--	draw_ladder(48, 200, 33) -- ladder 4
+	--	-- 3rd floor
+	--	draw_girder(81, 16, 81, 56)
+	--	draw_girder(81, 64, 81, 160)
+	--	draw_girder(81, 168, 81, 208)
+	--	draw_ladder(88, 24, 33) -- left ladder
+	--	draw_ladder(88, 104, 33) -- middle ladder
+	--	draw_ladder(88, 192, 33) -- right ladder
+	--	-- 4th floor
+	--	draw_girder(121, 24, 121, 56)
+	--	draw_girder(121, 64, 121, 160)
+	--	draw_girder(121, 168, 121, 200)
+	--	draw_ladder(128, 32, 33) -- ladder 1
+	--	draw_ladder(128, 64, 33) -- ladder 2
+	--	draw_ladder(128, 152, 33) -- ladder 3
+	--	draw_ladder(128, 184, 33) -- ladder 4
+	--	-- 5th floor
+	--	draw_girder(161, 32, 161, 56)
+	--	draw_girder(161, 64, 161, 160)
+	--	draw_girder(161, 168, 161, 192)
+	--	-- Pauline's floor
+	--	draw_girder(201, 56, 201, 168)
+	--	draw_pauline(104)
+	--	draw_loveheart()
+	--	-- Sprites
+	--	draw_hammers(149,105,108,8)
+	--	draw_kong(168, 92)
+	--	draw_jumpman()
+	--	draw_fireballs()
+	--	draw_points()
+	--end
 
-		-- 1st floor
-		draw_girder(1, 0, 1, 223)
-		draw_ladder(8, 8, 33) -- left ladder
-		draw_ladder(8, 104, 33) -- middle ladder
-		draw_ladder(8, 208, 33) -- right ladder
-		-- 2nd floor
-		draw_girder(41, 8, 41, 56)
-		draw_girder(41, 64, 41, 160)
-		draw_girder(41, 168, 41, 216)
-		draw_ladder(48, 16, 33) -- ladder 1
-		draw_ladder(48, 72, 33) -- ladder 2
-		draw_ladder(48, 144, 33) -- ladder 3
-		draw_ladder(48, 200, 33) -- ladder 4
-		-- 3rd floor
-		draw_girder(81, 16, 81, 56)
-		draw_girder(81, 64, 81, 160)
-		draw_girder(81, 168, 81, 208)
-		draw_ladder(88, 24, 33) -- left ladder
-		draw_ladder(88, 104, 33) -- middle ladder
-		draw_ladder(88, 192, 33) -- right ladder
-		-- 4th floor
-		draw_girder(121, 24, 121, 56)
-		draw_girder(121, 64, 121, 160)
-		draw_girder(121, 168, 121, 200)
-		draw_ladder(128, 32, 33) -- ladder 1
-		draw_ladder(128, 64, 33) -- ladder 2
-		draw_ladder(128, 152, 33) -- ladder 3
-		draw_ladder(128, 184, 33) -- ladder 4
-		-- 5th floor
-		draw_girder(161, 32, 161, 56)
-		draw_girder(161, 64, 161, 160)
-		draw_girder(161, 168, 161, 192)
-		-- Pauline's floor
-		draw_girder(201, 56, 201, 168)
-		draw_pauline(104)
-		draw_loveheart()
-		-- Sprites
-		draw_hammers(149,105,108,8)
-		draw_kong(168, 92)
-		draw_jumpman()
-		draw_fireballs()
-		draw_points()
-	end
-
-	function screen_specific_changes()
+	function mode_specific_changes()
 		local _y, _x
-		--if scr:frame_number() < 180 and read(0x6001, 0) then
-		--	-- Launch with the logo screen for 3 seconds (unless coin is inserted)
-		--	write(MODE, 0x06)
-		--end
-		if game_mode == 0x10 then
+		if game_mode == 0x06 and last_mode == 0x06 then
+			-- display a growling Kong on the title screen
+			draw_kong(48, 92, true)
+			-- show vector logo and "vectorised by 10yard" in the footer
+			draw_object("logo", 96, 16,  0xff444444 + math.random(0xbbbbbb))
+			for _k, _v in ipairs({0x26,0x15,0x13,0x24,0x1f,0x22,0x19,0x23,0x15,0x14,0x10,0x12,0x29,0x10,0x01,0x00,0x29,0x11,0x22,0x14}) do
+				draw_object(_v, 8, _k*8+25, GRY)
+			end
+			-- restore the game startup logic
+			if mem:read_direct_u32(0x01ea) ~= 0xaf622732 then
+				mem:write_direct_u32(0x01ea, 0xaf622732)
+			end
+		elseif game_mode == 0x07 then
+			-- skip the DK climbing/intro scene
+			write(MODE, 0x08)
+		elseif game_mode == 0x08 and last_mode == 0x16 then
+			-- stay on the girders stage
+			write(STAGE, 1)
+			write(LEVEL, read(LEVEL) + 1)
+		elseif game_mode == 0x10 then
 			-- emphasise the game over message
 			scr:draw_box(64, 64, 88, 160, BLK, BLK)
 		elseif game_mode == 0x15 then
 			-- highlight selected character during name registration
 			_y, _x = math.floor(read(0x6035) / 10) * -16 + 156, read(0x6035) % 10 * 16 + 36
 			draw_object("select", _y, _x, CYN)
-		elseif game_mode == 0x06 then
-			-- restore basic block for title screen and display growling kong
-			vector_lib[0xb0] = vector_lib[0xfb0]
-			draw_kong(48, 92, true)
-			-- display "vectoristation by 10yard" in the footer
-			for _k, _v in ipairs({0x26,0x15,0x13,0x24,0x1f,0x22,0x19,0x23,0x11,0x24,0x19,0x1f,0x1e,0x10,0x12,0x29,0x10,0x01,0x00,0x29,0x11,0x22,0x14}) do
-				draw_object(_v, 7, _k*8+8, 0xff000000+math.random(0xffffff))
-			end
 		elseif game_mode == 0xa then
 			-- display multiple kongs on the how high can you get screen
 			_y, _x = 24, 92
@@ -219,7 +222,7 @@ function vectorkong.startplugin()
 	-----------------------------------
 	function vector(y1, x1, y2, x2)
 		-- draw a single vector
-		scr:draw_line(y1*vector_scale, x1*vector_scale, y2*vector_scale, x2*vector_scale, vector_color)
+		scr:draw_line(y1, x1, y2, x2, vector_color)
 		vector_count = vector_count + 1
 	end
 
@@ -510,11 +513,6 @@ function vectorkong.startplugin()
 		vector_color = WHT
 	end
 
-	function debug_stay_on_girders()
-		write(STAGE, 1)
-		write(LEVEL, read(LEVEL) + 1)
-	end
-
 	---- Graphics memory
 	--------------------
 	function clear_graphic_banks()
@@ -604,9 +602,8 @@ function vectorkong.startplugin()
 		_lib[0x89] = _lib[0x09] --
 		_lib[0x8a] = _lib[0x1d] -- Alternative M's
 		_lib[0x8b] = _lib[0x1d] --
-		_lib[0x9f] = {2,0,0,2,0,13,2,15,5,15,7,13,7,2,5,0,2,0,BR,BR,5,3,5,7,BR,BR,5,5,2,5,BR,BR,2,8,5,8,4,10,5,12,2,12} -- TM
-		_lib[0xb0] = {BR,CYN,0,0,0,8,BR,BR,6,0,6,8} -- Basic block for title Screen
-		_lib[0xfb0] = _lib[0xb0] -- Copy of basic block
+		_lib[0x9f] = {} -- {2,0,0,2,0,13,2,15,5,15,7,13,7,2,5,0,2,0,BR,BR,5,3,5,7,BR,BR,5,5,2,5,BR,BR,2,8,5,8,4,10,5,12,2,12} -- TM (default logo is cleared)
+		_lib[0xb0] = {} -- basic block used for title screen (default logo is cleared)
 		_lib[0xb1] = {0,0,7,0,7,7,0,7,0,0} -- Box
 		_lib[0xb7] = {BR,YEL,0,0,1,0,1,1,6,1,6,0,7,0,7,6,6,6,6,5,1,5,1,6,0,6,0,0} -- Rivet
 		_lib[0xdd] = {0,0,7,0,BR,BR,4,0,4,4,BR,BR,1,4,7,4,BR,BR,2,9,1,6,7,6,7,9,BR,BR,5,6,5,9,BR,BR,7,11,2,11,3,14,BR,BR,3,16,7,16,7,18,6,19,5,18,5,16,BR,BR,7,22,5,21,BR,BR,3,21,3,21} -- Help (big H)
@@ -630,6 +627,7 @@ function vectorkong.startplugin()
 		_lib[0xf63] = {BR,YEL,8,3,8,0,BR,BR,5,4,1,0,BR,BR,4,7,1,7,BR,BR,5,11,1,15,BR,BR,8,12,8,15,BR,BR,10,11,14,15,BR,BR,11,7,14,7,BR,BR,10,4,14,0,BR,RED,8,6,8,8,BR,BR,7,7,9,7}
 
 		-- Non-character objects:
+		_lib["logo"] = {0,32,39,32,BR,BR,20,32,0,55,BR,BR,20,32,39,55,BR,BR,0,64,0,87,39,87,39,64,0,64,BR,BR,0,96,39,96,0,119,39,119,BR,BR,20,140,20,151,0,151,0,128,39,128,39,151,BR,BR,95,0,56,12,95,23,BR,BR,56,55,56,32,95,32,95,55,BR,BR,76,32,76,55,BR,BR,56,87,56,64,95,64,95,87,BR,BR,95,96,95,119,BR,BR,95,108,56,108,BR,BR,56,128,56,151,95,151,95,128,56,128,BR,BR,56,160,95,160,95,183,76,183,76,160,56,183} -- vectorkong logo
 		_lib["select"] = {0,0,16,0,16,16,0,16,0,0}  -- selection box
 		_lib["zigzag"] = {3,4,4,8,3,12} -- zig zags for girders
 		_lib["oilcan"] = {1,1,15,1,BR,BR,1,15,15,15,BR,BR,5,1,5,15,BR,BR,12,1,12,15,BR,BR,7,4,10,4,10,7,7,7,7,4,BR,BR,7,9,10,9,BR,BR,7,13,7,11,10,11,BR,BR,15,0,16,0,16,16,15,16,15,0,BR,BR,1,0,0,0,0,16,1,16,1,0}
