@@ -1,8 +1,8 @@
-# **Vectorising Donkey Kong** #
+# **Vector Kong** #
 
-I'm working on a vectorised version of Donkey Kong for MAME.  I'll be hacking the original game,  suppressing the normal video output completely and rendering high resolution vectors to the screen instead of pixels.  The techniques I'll be  using could be applied to other classic arcade games.  I'm choosing Donkey Kong because I am very familiar with the disassembled code and mechanics of the game.
+A vectorised version of Donkey Kong for MAME.  A hack of the original arcade game which suppresses the normal video output completely and renders high resolution vectors to the screen instead of pixels.  The techniques used could be applied to other classic arcade games.
 
-My plan is to use the simple vector drawing capabilities of MAME LUA scripting language (available in MAME from version 0.196 to current).  
+The plugin makes use of the drawing capabilities of LUA scripting language (available in MAME from version 0.196 to current).  
 
 
 ![VectorKong Plugin Screenshot](https://i.imgur.com/BnjPCD9.gif)
@@ -15,11 +15,13 @@ Compatible with all MAME versions from 0.196
   
 ## Installing and running
  
-It's work in progress.  You can check out what is done so-far by copying the "vectorkong" folder into your MAME plugins folder.
+The Plugin is installed by copying the "vectorkong" folder into your MAME plugins folder.
 
-The Plugin is run by adding `-plugin vectorkong` to your MAME arguments e.g.
+The Plugin is run by adding `-plugin vectorkong` to your MAME arguments.  I also recommend that you use opengl video e.g.
 
-```mame dkong -plugin vectorkong```  
+```mame dkong -plugin vectorkong -video opengl```
+
+or you can enable the plugin in your MAME configuration.
 
 
 ## Feedback
@@ -28,3 +30,4 @@ Please send feedback to jon123wilson@hotmail.com
 
 Jon
 
+![VectorKong Plugin Logo](https://i.imgur.com/TzLTdeE.gif)
