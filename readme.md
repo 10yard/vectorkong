@@ -8,7 +8,7 @@ The plugin makes use of the drawing capabilities of LUA scripting language (avai
 ![VectorKong Plugin Screenshot](https://i.imgur.com/BnjPCD9.gif)
 
 
-Tested with latest MAME version 0.245
+Tested with MAME version 0.241
 
 Compatible with all MAME versions from 0.196
 
